@@ -19,7 +19,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 								   1:WINDOWS.Hを使わうバージョン
 								   現状、時間あわせの問題が出てきている(cコンパイラのバージョンによって違う
 								   VC6++のansi-c縛りなので、読み違えてください */
-#define MAX_BUFFER	16			/* _MAX_PATHに掛ける係数
+#define MAX_BUFFER	16			/* _MAX_PATHに掛ける係数 */
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
