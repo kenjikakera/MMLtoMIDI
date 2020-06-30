@@ -1,166 +1,162 @@
 /**
-	アセンブラのEQUを持ってきただけなので、cでは未実装
+	SMFの1をサポートすれば良いとする
 */
 
+#define MIDI_CH_MAX	16
 
-midi_ch_max	equ	16
-;------------------------------------------------------------------------------
-;	header
-;------------------------------------------------------------------------------
-mid_head	struc
-_mid_head_chunk_type	db 4h dup(?)	; "MThd"
-_mid_head_length	dd	?	; header length ( 通常 6 )
-_mid_head_format	dw	?	; mid file format type
-_mid_head_ntrks		dw	?	; track 数
-_mid_head_division	dw	?	; ???
-mid_head	ends
-
-
-;------------------------------------------------------------------------------
-;	track
-;------------------------------------------------------------------------------
-mid_track	struc
-_mid_track_chunk_type	db 4h dup(?)	; "MTrk"
-_mid_track_length	dd	?	; track length
-_mid_track_data		db	?	; 以後、data
-mid_track	ends
+/*-----------------------------------------------------------------------------
+	header
+-----------------------------------------------------------------------------*/
+struct _MID_HEAD {
+	mid_head_chunk_type	"MThd"		/* "MThd" */
+	mid_head_length		DWOED32	0	/* header length ( 通常 6 ) */
+	mid_head_format		WORD16	0	/* mid file format type */
+	mid_head_ntrks		WORD16	0	/* track 数 */
+	mid_head_division	WORD16	0	; ???
+}
 
 
+/*-----------------------------------------------------------------------------
+	track
+-----------------------------------------------------------------------------*/
+struct _MID_TRACK {
+	mid_track_chunk_type	"MTrk"		/* "MTrk" */
+	mid_track_length	DWORD32		/* track length */
+					/* mid_track_data		db	?	; 以後、data */
+}
 
-;------------------------------------------------------------------------------
-;	曲データー形式
-;------------------------------------------------------------------------------
-mid_tbl		macro
-;
-;	.rcp data command tbl macro
-;
-				dw	#note_off_0		;080h
-				dw	#note_off_1
-				dw	#note_off_2
-				dw	#note_off_3
-				dw	#note_off_4
-				dw	#note_off_5
-				dw	#note_off_6
-				dw	#note_off_7
-				dw	#note_off_8
-				dw	#note_off_9
-				dw	#note_off_a
-				dw	#note_off_b
-				dw	#note_off_c
-				dw	#note_off_d
-				dw	#note_off_e
-				dw	#note_off_f
-				dw	#note_on_0		;090h
-				dw	#note_on_1
-				dw	#note_on_2
-				dw	#note_on_3
-				dw	#note_on_4
-				dw	#note_on_5
-				dw	#note_on_6
-				dw	#note_on_7
-				dw	#note_on_8
-				dw	#note_on_9
-				dw	#note_on_a
-				dw	#note_on_b
-				dw	#note_on_c
-				dw	#note_on_d
-				dw	#note_on_e
-				dw	#note_on_f
-				dw	#after_k_0		;0a0h
-				dw	#after_k_1
-				dw	#after_k_2
-				dw	#after_k_3
-				dw	#after_k_4
-				dw	#after_k_5
-				dw	#after_k_6
-				dw	#after_k_7
-				dw	#after_k_8
-				dw	#after_k_9
-				dw	#after_k_a
-				dw	#after_k_b
-				dw	#after_k_c
-				dw	#after_k_d
-				dw	#after_k_e
-				dw	#after_k_f
-				dw	#control_0		;0b0h
-				dw	#control_1
-				dw	#control_2
-				dw	#control_3
-				dw	#control_4
-				dw	#control_5
-				dw	#control_6
-				dw	#control_7
-				dw	#control_8
-				dw	#control_9
-				dw	#control_a
-				dw	#control_b
-				dw	#control_c
-				dw	#control_d
-				dw	#control_e
-				dw	#control_f
-				dw	#program_0		;0c0h
-				dw	#program_1
-				dw	#program_2
-				dw	#program_3
-				dw	#program_4
-				dw	#program_5
-				dw	#program_6
-				dw	#program_7
-				dw	#program_8
-				dw	#program_9
-				dw	#program_a
-				dw	#program_b
-				dw	#program_c
-				dw	#program_d
-				dw	#program_e
-				dw	#program_f
-				dw	#after_c_0		;0d0h
-				dw	#after_c_1
-				dw	#after_c_2
-				dw	#after_c_3
-				dw	#after_c_4
-				dw	#after_c_5
-				dw	#after_c_6
-				dw	#after_c_7
-				dw	#after_c_8
-				dw	#after_c_9
-				dw	#after_c_a
-				dw	#after_c_b
-				dw	#after_c_c
-				dw	#after_c_d
-				dw	#after_c_e
-				dw	#after_c_f
-				dw	#pitch_0		;0e0h
-				dw	#pitch_1
-				dw	#pitch_2
-				dw	#pitch_3
-				dw	#pitch_4
-				dw	#pitch_5
-				dw	#pitch_6
-				dw	#pitch_7
-				dw	#pitch_8
-				dw	#pitch_9
-				dw	#pitch_a
-				dw	#pitch_b
-				dw	#pitch_c
-				dw	#pitch_d
-				dw	#pitch_e
-				dw	#pitch_f
-				dw	#exclusive_f0h		;0f0h
-				dw	#next
-				dw	#next
-				dw	#next
-				dw	#next
-				dw	#next
-				dw	#next
-				dw	#exclusive_f7h
-				dw	#next
-				dw	#next
-				dw	#next
-				dw	#next
-				dw	#next
-				dw	#next
-				dw	#next
-				dw	#meta_event
-	endm
-
+/*-----------------------------------------------------------------------------
+	曲データー形式
+-----------------------------------------------------------------------------*/
+MID_TBL	BYTE ={
+	BYTE	note[128]		/* key */
+	/* .rcp data command tbl */
+	BYTE	note_off_0		/* 0x80 */
+	BYTE	note_off_1
+	BYTE	note_off_2
+	BYTE	note_off_3
+	BYTE	note_off_4
+	BYTE	note_off_5
+	BYTE	note_off_6
+	BYTE	note_off_7
+	BYTE	note_off_8
+	BYTE	note_off_9
+	BYTE	note_off_a
+	BYTE	note_off_b
+	BYTE	note_off_c
+	BYTE	note_off_d
+	BYTE	note_off_e
+	BYTE	note_off_f
+	BYTE	note_on_0		/* 0x90 */
+	BYTE	note_on_1
+	BYTE	note_on_2
+	BYTE	note_on_3
+	BYTE	note_on_4
+	BYTE	note_on_5
+	BYTE	note_on_6
+	BYTE	note_on_7
+	BYTE	note_on_8
+	BYTE	note_on_9
+	BYTE	note_on_a
+	BYTE	note_on_b
+	BYTE	note_on_c
+	BYTE	note_on_d
+	BYTE	note_on_e
+	BYTE	note_on_f
+	BYTE	after_k_0		/* 0xa0 */
+	BYTE	after_k_1
+	BYTE	after_k_2
+	BYTE	after_k_3
+	BYTE	after_k_4
+	BYTE	after_k_5
+	BYTE	after_k_6
+	BYTE	after_k_7
+	BYTE	after_k_8
+	BYTE	after_k_9
+	BYTE	after_k_a
+	BYTE	after_k_b
+	BYTE	after_k_c
+	BYTE	after_k_d
+	BYTE	after_k_e
+	BYTE	after_k_f
+	BYTE	control_0		/* 0b0h */
+	BYTE	control_1
+	BYTE	control_2
+	BYTE	control_3
+	BYTE	control_4
+	BYTE	control_5
+	BYTE	control_6
+	BYTE	control_7
+	BYTE	control_8
+	BYTE	control_9
+	BYTE	control_a
+	BYTE	control_b
+	BYTE	control_c
+	BYTE	control_d
+	BYTE	control_e
+	BYTE	control_f
+	BYTE	program_0		/* 0c0h */
+	BYTE	program_1
+	BYTE	program_2
+	BYTE	program_3
+	BYTE	program_4
+	BYTE	program_5
+	BYTE	program_6
+	BYTE	program_7
+	BYTE	program_8
+	BYTE	program_9
+	BYTE	program_a
+	BYTE	program_b
+	BYTE	program_c
+	BYTE	program_d
+	BYTE	program_e
+	BYTE	program_f
+	BYTE	after_c_0		/* 0xd0 */
+	BYTE	after_c_1
+	BYTE	after_c_2
+	BYTE	after_c_3
+	BYTE	after_c_4
+	BYTE	after_c_5
+	BYTE	after_c_6
+	BYTE	after_c_7
+	BYTE	after_c_8
+	BYTE	after_c_9
+	BYTE	after_c_a
+	BYTE	after_c_b
+	BYTE	after_c_c
+	BYTE	after_c_d
+	BYTE	after_c_e
+	BYTE	after_c_f
+	BYTE	pitch_0			/* 0xe0 */
+	BYTE	pitch_1
+	BYTE	pitch_2
+	BYTE	pitch_3
+	BYTE	pitch_4
+	BYTE	pitch_5
+	BYTE	pitch_6
+	BYTE	pitch_7
+	BYTE	pitch_8
+	BYTE	pitch_9
+	BYTE	pitch_a
+	BYTE	pitch_b
+	BYTE	pitch_c
+	BYTE	pitch_d
+	BYTE	pitch_e
+	BYTE	pitch_f
+	BYTE	exclusive_f0h		/* 0xf0 */
+	BYTE	next
+	BYTE	next
+	BYTE	next
+	BYTE	next
+	BYTE	next
+	BYTE	next
+	BYTE	exclusive_f7h
+	BYTE	next
+	BYTE	next
+	BYTE	next
+	BYTE	next
+	BYTE	next
+	BYTE	next
+	BYTE	next
+	BYTE	meta_event
+}

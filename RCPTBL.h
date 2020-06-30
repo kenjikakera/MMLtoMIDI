@@ -3,7 +3,7 @@
 */
 
 struct _RCP_TBL {
-	BYTE	note[128]
+	BYTE	note[128]		/* key */
 	BYTE	UNKNOWN			/* 0x80 */
 	BYTE	UNKNOWN
 	BYTE	UNKNOWN
