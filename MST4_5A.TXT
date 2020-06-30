@@ -1,0 +1,2191 @@
+
+	msdrv4.exe ver 4.5　常駐型 fm /midi ドライバー仕様書
+	msdrv4l.exe version 4.5a
+	ms2msf.exe version 4.5a
+	mswatch0.com
+	msp.asm
+	msmixsb.asm
+	mswatch0.asm
+
+						by KENJI All right reserved
+
+
+　msdrv4.exe の仕様書です。ご自分で msdrv4.exe を制御したい方は、ご一読下さい。
+それ以外の方は、読んでもあまり意味がありません。
+
+
+【 ms2msf.exe 】
+	　.ms データーは編集用のため、扱いやすいように全てのデーターが 4 byte 
+	単位で作られています。よって、データー量が多大になってしまいます。それ
+	をより小さなデーターにするが ms2msf.exe です。このツールによって .msf 
+	を作成し、ゲームの組み込みにはこちらを使用した方が良いでしょう。
+	　データーの混乱の可能性があるので、ゲームの組み込み以外には .msf ファ
+	イルを使用しないで下さい。
+	　なお、このツールは動作が非常に遅いです。なぜなら最長一致の検索ルーチ
+	ンが悪いからです。
+
+
+【 msdrv4l.exe 】
+	　MSDRV4.EXE から一部機能を削除した縮小版です。ゲーム等に組み込む場合は
+	こちらを使用した方が良いでしょう。以下、msdrv4.exe との違いを記します。
+	　○起動時に各種 buffer を初期化しません。
+	　○曲データーが 64kbyte 以内しか確保できません。
+	　○演奏中に [grph] キーを押しても曲の早送りをしません。
+	　○subroutine 登録が出来ません。
+
+	　実際にゲームへ組み込むデーターを作成する場合は、10 track 以内位にし
+	て、opn を 64 program 、ssg を 32 program 位にするのが良いでしょう。
+	曲データーそのものも、.msf で 20,000 位がちょうど良いでしょう。そして
+	効果音バッファーは 1,024 位が良いでしょう。そのときの常駐オプションは
+	>msdrv4l.exe b20000 e1024 o32 s64 t10[ret]
+	です。これ位ならメモリーを圧迫せずにゲーム中から使用できます。
+
+
+【 mswatch0.com 】
+	　このプログラムは msdrv4.exe の total step を画面左上に表示する常駐プ
+	ログラムです。msdrv4 の seqence 割り込みが掛かる毎に画面の書き換えをし
+	ています。
+
+
+【 msp.asm / mswatch0.asm 】
+	　このソースは msdrv4.exe 使用のためのサンプルです。一部や全体のを引用
+	をする場合にも著者の許可は必要ありません。しかし、ネット等で公開する場
+	合は極力ファイルネームを変更して下さい。
+
+
+【 msmixsb.asm 】
+	　msmixsb.asm は sb16 の mixer を直接制御するサンプルとなると思います
+	ので、sb16 を直接制御したい場合には参考にしていただけると幸いです。
+
+
+【改訂の記録】
+	　msdrv4l.exe の改訂の記録は、msdrv4.his を参照して下さい。
+
+	v4.0a	1995	 3/10	　ver4.0a 公開
+	v4.1a		 3/10	　ms2msf.exe の loop チェックが厳格だったのを
+				もっと易しくする
+	v4.2a		 5/ 4	　ms2msf.exe の program 最適化が midi ch コマ
+				ンドの後に off にされていなかったのを直す
+			 5/20	　mswatch0.com を作った
+	v4.3a		 6/18	　ms2msf.exe が bankprg のときに、program の最
+				適化を off にしなかったバグを fix
+				　ms2msf.exe が loopstart のときに、.ms の vol
+				だけ最適化を off にしていたのを .msf も最適化
+				off するようにした。
+				　ms2msf.exe が 1 ヶ所 msf pointer の正規化を
+			 7/15	していない所があったのを直す
+	v4.4a		 9/ 5	　ver 4.4 に準拠
+	v4.4b	1996	 1/21	　ver 4.4b に準拠
+	v4.5a		 4/16	　ver 4.5a に準拠
+
+
+【連絡先】
+　　　　zob　　　　　　　　　　 zob11789
+　　　　東京ＢＢＳ　　　　　　　KAKERA  
+　　　　アトランティスネット　　ATL0935 
+	アリス－ネット		ALS07436
+　　　　ﾛｰｶﾙﾗｲﾝ夜な夜な　　　　 YEN548  
+　　　　ミルキームーンＮＥＴ　　MMN00562
+　　　　Midnight Cat　　　　　　KENJI   
+	アイオー☆倶楽部	IOC00449
+　　　　ＢＯＭＢネット　　　　　BOMB0004
+	NIFTY-Serve		GEG06337
+
+	　仕事が忙しい場合、お返事が遅れることが御座います。ご了承下さい。
+
+
+==============================================================================
+==============================================================================
+	作曲上の注意点
+==============================================================================
+==============================================================================
+
+
+【midi の fade-out / fade-in について】
+	　midi-control の 7 番の volume を使って表現しています。127 からの減算
+	で処理していますので、曲の中では極力これをいじらないで下さい。
+
+
+【ssg の noise について】
+	　msdrv4 の ssg の音色には ssg の noise の設定が含まれています。しかし
+	ハードの制約上いくらかの制約があります。
+	　ssg の noise は ssg の各チャンネル毎に on/off の設定が出来ますが、noi
+	se の周波数は 1 つしか指定できません。よって同時に多数のチャンネルで no
+	ise を使用する音色を使用した場合、最後に設定した音色の noise の周波数の
+	パラメーターが使用されます。
+	　なるべく同時に ssg noise を使用することはお避け下さい。
+
+
+==============================================================================
+==============================================================================
+	組み込み時の注意点
+==============================================================================
+==============================================================================
+
+
+【 timer 】
+	　音源がない場合でも timer を使用します。これによりアプリケーション中
+	からタイミングを取る場合、音源のありなしを気にする必要がなくなります。
+	timer の使用順位は opn/opna の timerA/B -> timer0 です。一度に 1 個の
+	timer しか使用しません。vsync 割り込みは使用しません。
+	　なお、ver4.5 より 任意の timer を使用することが可能になりました。
+
+
+【 効果音について 】
+	　一度でも曲をスタートさせないと効果音は鳴りません。その後は曲を止めて
+	も効果音を鳴らせます。ドライバー常駐後、休符だけの曲をロードしてスター
+	トさせる等、工夫をして下さい。
+
+
+==============================================================================
+==============================================================================
+	msdrv4 の function
+==============================================================================
+==============================================================================
+
+
+【常駐チェックの仕方】
+	　まず、int61h のベクターを拾得します( dos.function-35h )。ah=35h,al=
+	61hをセットして int21h を実行すると、es:bx に int61h のベクターポイン
+	ターがセットされます。そして、ポインター es:bx+2 からの内容が "MsDRV"
+	なら MSDRV が常駐済です。
+	　実際のチェックの仕方は、下記のソース ( check_memory_msdrv ) をご覧に
+	なって下さい。なお、常駐プログラムID は ANK の大文字と小文字が混在して
+	いますので、気を付けて下さい。check_memory_msdrv は、COM プログラムか
+	らでも EXE プログラムからでも呼び出すことが可能です。出力はゼロフラグ
+	なので、コールした後、チェックして下さい。参考までに、( main00 )をご覧
+	になって下さい。
+
+
+【実行中かのステータス】
+	　現在 msdrv  function を実行中かどうかを確認する STATUS がありま
+	す。この status ( inMSDRVflag ) は 常駐id のすぐ後ろにあります。これが
+	0 以外なら msdrv  function の実行中です。
+	　これは、割り込み側から安全に msdrv の function を実行するための
+	ものです。
+
+
+【msdrv4.2 以前の version の重大なバグ】
+	　version4.2 以前の version の msdrv4 には重大なバグがあります。対応
+	ツールを作る場合、ドキュメントにこれ以前のバージョンを使わないように
+	明記して下さい。重大なバグとは、インプリメントしていない function で
+	bp=8000h を返していなかった事です。version4.0 と 4.1 の場合にはツール
+	を起動しないようにするのが一番良い方法だと思います。
+
+
+check_memory_msdrv	proc	near
+;
+;	メモリー常駐チェック
+;
+;(OUT)	Zero.Flag = 1 msdrv4.exe 常駐済
+;		  = 0 msdrv4.exe 常駐していない
+;
+vecint	equ	61h			; msdrv の割り込みベクター番号
+	push	ds
+	push	es
+
+	push	cs			; ｾｸﾞﾒﾝﾄ設定
+	pop	ds
+	mov	ax,3500h+vecint		;割り込みベクター拾得
+	int	21h			; es:bx=割り込みベクター
+	add	bx,2			; es:bx+2=起動中の常駐プログラムのID
+	mov	di,bx
+	mov	si,offset tsrid		; ds:si=常駐プログラムのID
+	mov	cx,size tsrid
+	repe	cmpsb			; ﾒﾓﾘ常駐ﾁｪｯｸ
+
+	pop	es
+	pop	ds
+	ret
+tsrid	db	"MsDRV"			; 常駐ID
+check_memory_msdrv	endp
+
+
+main00			proc	near
+
+	push	cs			; セグメント設定
+	pop	ds
+	call	check_memory_msdrv	; msdrv 常駐チェック
+	je	next00
+	mov	dx,offset mes_err	; エラーメッセージ表示
+	mov	ah,09h
+	int	21h
+	mov	ax,4c01h		; エラー終了
+	int	21h
+next00:	mov	dx,offset mes_000	; メッセージ表示
+	mov	ah,09h
+	int	21h
+	mov	ax,4c00h		; 正常終了
+	int	21h
+mes_000		db	"msdrv は常駐してます。",0dh,0ah,"$"
+mes_err		db	"msdrv は常駐してません。",0dh,0ah,"$"
+main00			endp
+
+
+【 msdrv4.exe の ver 4.0 の function 】
+ ah = 00h	バージョン拾得
+ ah = 01h	INIT BOARD
+ ah = 02h	music driver の常駐解除
+ ax = 0803h	ssg のボリューム拾得
+ ax = 0804h	opn のボリューム拾得
+ ax = 0805h	rhythm のボリューム拾得
+ ax = 0903h	ssg のボリューム設定
+ ax = 0904h	opn のボリューム設定
+ ax = 0905h	rhythm のボリューム設定
+ ah = 10h	割り込み番号拾得
+ ah = 11h	opn の情報拾得 0
+ ah = 12h	opn の port 拾得
+ ax = 1800h	midi-A の情報拾得
+ ax = 1801h	midi-B の情報拾得 ( ver4.5 で function-1800h と統合 )
+ ax = 2000h	曲データーへのポインターとサイズ拾得
+ ax = 2001h	現在の演奏状態の拾得
+ ax = 2010h	track データーへのポインターとサイズ拾得
+ ax = 2011h	track の各種情報へのポインター拾得
+ ax = 2020h	ssg データーへのポインターとサイズ拾得
+ ax = 2030h	opn データーへのポインターとサイズ拾得
+ ax = 2100h	曲スタート
+ ax = 2101h	曲スタート fade-in
+ ax = 2200h	曲ストップ
+ ax = 2201h	曲ストップ fade-out
+
+
+【 msdrv4.exe の ver 4.1 の function の追加 】
+	　ver 4.1 で追加された function は編集ツールから、色々な演奏をできる用
+	にするために追加された物です。
+
+ ax = 2002h	total step の拾得
+ ax = 2102h	指定位置まで演奏時の初期化のみ
+ ax = 2103h	指定位置まで演奏時の演奏本体のみ
+ ax = 2104h	指定位置まで演奏を通常演奏にする
+ ax = 2105h	演奏開始時にチャンネルワークを初期化するか決定
+ ax = 2106h	演奏開始時にチャンネルワークを初期化するかを拾得
+ ax = 2107h	stop pointer の設定
+
+
+【 msdrv4.exe の ver 4.2 の function の追加 】
+	　ver 4.2 で追加された function は joystic 関連と sound-blaster 関連、
+	ssg 効果音関連、そして常駐ツールから msdrv4 の制御と監視を行うために追
+	加された物です。
+
+ ax = 0300h	subroutine の登録 ( seqence から呼ばれる )
+ ax = 0301h	subroutine の削除 ( seqence から呼ばれる )
+ ax = 0302h	subroutine の最大数を拾得
+ ax = 0303h	subroutine のベクターを拾得
+ ah = 14h	sb16 の情報拾得
+ ah = 15h	opl の port 拾得
+ ax = 2003h	music timing flag の拾得
+ ax = 2004h	music timing flag の設定
+ ah = 30h	joystick の情報拾得
+ ah = 31h	joystick ( pad ) のデーター拾得
+ ah = 32h	joystick ( analog ) のデーター拾得
+ ah = 40h	effect 発音
+ ah = 41h	effect 発音
+ ah = 48h	effect data への pointer と size 拾得
+ ah = 50h	ssg effect の設定を拾得
+ ah = 51h	ssg effect を設定
+
+
+【 msdrv4.exe の ver 4.3 の function の追加 】
+	　ver 4.3 で追加された function は opn/opl/midi 効果音関連、sound-blas
+	ter の mixer 関連です。
+
+ ah = 58h	opn effect の設定を拾得
+ ah = 59h	opn effect を設定
+ ah = 60h	opl effect の設定を拾得
+ ah = 61h	opl effect を設定
+ ah = 68h	midi effect の設定を拾得
+ ah = 69h	midi effect を設定
+ ah = 80h	sb16 の mixer の data を拾得
+ ah = 81h	sb16 の mixer に data を設定
+
+
+【 msdrv4.exe の ver 4.4 の function の追加 】
+	　ver 4.4 で追加された function は ssg-pcm 関連の物です。
+ah = 90h	set ssg      (check付き datasave付き)
+ah = 91h	set ssg      (check無し datasave付き)
+ah = 92h	set ssg      (check無し datasave無し)
+ah = 93h	ssg mix を出力
+ah = 94h	opn から data 拾得する
+ah = 95h	opn に data 出力       (datasave無し)
+ah = 96h	opna に data 出力      (datasave無し)
+ah = 97h	opn/opna に data 出力  (datasave無し)
+ah = 98h	opn に data 出力       (datasave付き)
+ah = 99h	opna に data 出力      (datasave付き)
+ah = 9ah	opn/opna に data 出力  (datasave付き)
+ah = 9bh	ch3 mode(=timer)を出力
+ah = a0h	get pointer to set ssg      (check付き datasave付き)
+ah = a1h	get pointer to set ssg      (check無し datasave付き)
+ah = a2h	get pointer to set ssg      (check無し datasave無し)
+ah = a3h	get pointer to ssg mix を出力
+ah = a4h	get pointer to opn から data 拾得する
+ah = a5h	get pointer to opn に data 出力       (datasave無し)
+ah = a6h	get pointer to opna に data 出力      (datasave無し)
+ah = a7h	get pointer to opn/opna に data 出力  (datasave無し)
+ah = a8h	get pointer to opn に data 出力       (datasave付き)
+ah = a9h	get pointer to opna に data 出力      (datasave付き)
+ah = aah	get pointer to opn/opna に data 出力  (datasave付き)
+ah = abh	get pointer to ch3 mode(=timer)を出力
+ah = c0h	msdrv lock number を拾得する
+ah = c1h	msdrv lock number を設定する
+ah = c2h	msdrv lock number を inc する
+ah = c3h	msdrv lock number を dec する
+ah = d0h	pcm driver の形式を msdrv4 へ伝える
+
+【 msdrv4.exe の ver 4.4b の function の変更 】
+	　ver 4.4b で変更された function は pc-9801-118 関連の物です。
+ ah = 11h	opn の情報拾得 0
+ ah = 30h	joystick の情報拾得
+ ah = 32h	joystick ( analog ) のデーター拾得
+
+【 msdrv4.exe の ver 4.5 の function の変更 / 追加 】
+	　ver 4.5 で変更された function は 音源情報関連の物です。
+ ah = 10h	割り込み番号拾得
+ ah = 18h	midi の情報拾得
+	　ver 4.5 で追加された function は 音源情報関連の物です。
+ ah = 13h	opn の port 拾得
+ ah = 17h	割り込み番号の設定
+ ah = 19h	midi の情報設定
+ ax = e000h	opn の情報拾得 1
+ ax = e008h	opn の port 拾得
+ ax = e009h	opn の port 設定
+ ax = e100h	opl の情報拾得
+ ax = e108h	opl の port 拾得
+ ax = e109h	opl の port 設定
+ ax = f000h	118 の情報拾得
+ ax = f001h	118-opna / 118-opl の切り替え
+ ax = f100h	sb の情報拾得 1
+ ax = f108h	sb の port 拾得
+ ax = f109h	sb の port 設定
+
+
+
+
+;-----------------------------------------------------------------------------
+;	system
+;-----------------------------------------------------------------------------
+;
+;	バージョン拾得
+;
+;(in)	ah　　　= 00h
+;
+;(out)	ah	= バージョン番号
+;	al	= リビジョン番号
+;	bp	= 0
+;
+;-----------------------------------------------------------------------------
+;
+;	init board
+;
+;(in)	ah　　　= 01h
+;
+;(out)	bp	= 0
+;
+;(説明)	board や rs232c を初期化します。
+;
+;-----------------------------------------------------------------------------
+;
+;	music driver の常駐解除
+;
+;(in)	ah	= 02h
+;
+;(out)	bp	= 0
+;
+;-----------------------------------------------------------------------------
+;	subroutine
+;-----------------------------------------------------------------------------
+;
+;	subroutine の登録 ( seqence から呼ばれる )
+;
+;(in)	ax	= 0300h
+;	es:bx   = pointer to function
+;
+;(out)	bp	= 0  : success
+;			ax = subroutine number
+;
+;	bp	= 1  : error ( これ以上登録できない )
+;
+;(注意)	msdrv4l.exe にはインプリメントされていません。bp = 8000h でリターンし
+;	ます。
+;
+;	最大 16 個の seqence から呼ばれる subroutine を登録することが出来ます。
+;	msdrv4 の seqence 割り込みが掛かる毎に登録された subroutine が far call
+;	されます。far call なので subroutine の最後は retf をして下さい。なお、
+;	再入はされません。
+;	 subroutine 内であまりに重い処理をすると nest 処理が深くなりすぎるので
+;	ご注意下さい。割り込み禁止はしていないので、なにか危険なことをする場合
+;	には割り込みを禁止して下さい。割り込みを禁止した場合は速やかに元に戻す
+;	よう心がけて下さい。
+;	 subroutine 内では flag レジスタを含む全てのレジスタを保存して下さい。
+;	大量の stack を消費する際には subroutine 内に local stack をもって下さ
+;	い。
+;
+;-----------------------------------------------------------------------------
+;
+;	subroutine の削除 ( seqence から呼ばれる )
+;
+;(in)	ax	= 0301h
+;	bx      = subroutine number
+;
+;(out)	bp	= 0  : success
+;
+;	bp	= 1  : error ( 未登録 )
+;
+;(注意)	msdrv4l.exe にはインプリメントされていません。bp = 8000h でリターンし
+;	ます。
+;
+;	 subroutine を常駐解除する際にはこの function で subroutine を削除して
+;	下さい。
+;
+;-----------------------------------------------------------------------------
+;
+;	subroutine の最大数を拾得
+;
+;(in)	ax	= 0302h
+;
+;(out)	bp	= 0
+;	cx	= 最大数 ( = 16 )
+;	ax	= 登録可能数
+;
+;(注意)	msdrv4l.exe にはインプリメントされていません。bp = 8000h でリターンし
+;	ます。
+;
+;-----------------------------------------------------------------------------
+;
+;	subroutine のベクターを拾得
+;
+;(in)	ax	= 0303h
+;	bx      = subroutine number
+;
+;(out)	bp	= 0  : success
+;			es:bx   = pointer to function
+;
+;	bp	= 1  : error
+;
+;(注意)	msdrv4l.exe にはインプリメントされていません。bp = 8000h でリターンし
+;	ます。
+;
+;-----------------------------------------------------------------------------
+;	volume
+;-----------------------------------------------------------------------------
+;
+;	各音源のボリューム拾得
+;
+;(in)	ax	= 0801h : midi-A ( msdrv4 ver4.2 で追加 )
+;	ax	= 0802h : midi-B ( msdrv4 ver4.2 で追加 )
+;	ax	= 0803h : ssg
+;	ax	= 0804h : opn
+;	ax	= 0805h : rhythm
+;	ax	= 0806h : opl ( msdrv4 ver4.2 で追加 )
+;
+;(out)	dl      = volume ( 0 - 127 )
+;	bp	= 0
+;
+;-----------------------------------------------------------------------------
+;
+;	各音源のボリューム設定
+;
+;(in)	ax	= 0901h : midi-A ( msdrv4 ver4.2 で追加 )
+;	ax	= 0902h : midi-B ( msdrv4 ver4.2 で追加 )
+;	ax	= 0903h : ssg
+;	ax	= 0904h : opn
+;	ax	= 0905h : rhythm
+;	ax	= 0906h : opl ( msdrv ver4.2 で追加 )
+;	dl      = volume ( 0 - 127 )
+;	bp	= 0
+;
+;-----------------------------------------------------------------------------
+;	irq status
+;-----------------------------------------------------------------------------
+;
+;	割り込み番号拾得
+;
+;(in)	ah = 10h
+;
+;(OUT)	AX	= 割り込み番号 ( irq 番号 )
+;		   0 / irq0  timer0
+;		   2 / irq2  vsync
+;		   3 / irq3  opn   ( int0  )
+;		  10 / irq10 opn   ( int41 )
+;		  12 / irq12 opn   ( int5  )
+;		  13 / irq13 opn   ( int6  )
+;		 257 / irq13 mouse ( int6  )
+;	BP	= 0
+;
+;-----------------------------------------------------------------------------
+;	opn function ( old version )
+;-----------------------------------------------------------------------------
+;
+;	opn の情報拾得 0
+;
+;(in)	ah = 11h
+;
+;(out)	ax = ボードの種類
+;		0:無し
+;		1:opn
+;		2:opna
+;		3:opna+adpcm
+;		4:86b ( opna + 86pcm )
+;		5:canbe ( opna + wsspcm / この構成の canbe に 118 を接続しても
+;		  opl3 は使用できないので注意が必要。その際、msdrv4 はボードの
+;		  種類は 5 とする。 )
+;		6:118 ( opna/opl + wsspcm )
+;	bp = 0
+;
+;-----------------------------------------------------------------------------
+;	sb16 ( old version )
+;-----------------------------------------------------------------------------
+;
+;	sb16 の情報拾得
+;
+;(in)	ah = 14h
+;
+;(OUT)	AX	= ボードの種類
+;		  0 / 無し
+;		  1 / sb16
+;
+;	BP	= 0
+;
+;-----------------------------------------------------------------------------
+;	select irq
+;-----------------------------------------------------------------------------
+set_int		proc	near
+;
+;	割り込み番号の設定
+;
+;(in)	ah = 17h
+;	bx	= 割り込み番号
+;		   0 / irq0  timer0
+;		   2 / irq2  vsync
+;		   3 / irq3  opn   ( int0  )
+;		  10 / irq10 opn   ( int41 )
+;		  12 / irq12 opn   ( int5  )
+;		  13 / irq13 opn   ( int6  )
+;		 256 / irq3,irq10,irq12,irq13 ( int0,int41,int5,int6 ) opn
+;		 257 / irq13 mouse int6
+;	bp	= 0
+;
+;(説明)	ax = 256 を指定した際には、割り込み番号は msdrv 常駐時の opn から読み
+;	込まれた値を使用します。opn が存在しない場合には timer0 が自動的に使
+;	用されます。
+;
+;(注意)	この function を実行した後には music driver の irq が止まってしまいま
+;	す。その後、一度でも曲をスタートさせないと効果音は鳴りません。その後は
+;	曲を止めても効果音を鳴らせます。休符だけの曲をロードしてスタートさせる
+;	等、工夫をして下さい。
+;
+;(注意)	pcm driver を使う場合は、この function を使用しないで下さい。
+;
+;-----------------------------------------------------------------------------
+;	midi
+;-----------------------------------------------------------------------------
+;
+;	midi の情報拾得
+;
+;(in)	ah = 18h
+;	al = midi port
+;		0:midi-a
+;		1:midi-b
+;
+;(out)	ax = ボードの種類
+;		  0:non
+;		  1:mpu-98 midi-board
+;		  2:rs-midi ( port 1 )
+;		  3:rs-midi ( port 2 )
+;		128:super-mpu ( port a )
+;		129:super-mpu ( port b )
+;	bx = mpu-98/super-mpu dataport
+;	dx = mpu-98/super-mpu statusport
+;	bp = 0
+;
+;	bp = 1: al の値がおかしい
+;
+;(注意)	ver4.5 で function-1800h と function-1801h が統合されましたが、返値は
+;	error のときも含めて統合前と同じなので、安心して下さい。
+;
+;-----------------------------------------------------------------------------
+;
+;	midi の情報設定
+;
+;(in)	ah = 19h
+;	al = midi port
+;		0:midi-a
+;		1:midi-b
+;	cx = ボードの種類
+;		  0:non
+;		  1:mpu-98 midi-board
+;		  2:rs-midi ( port 1 )
+;		  3:rs-midi ( port 2 )
+;		128:super-mpu ( port a )
+;		129:super-mpu ( port b )
+;	bx = mpu-98/super-mpu dataport ( -1 なら設定しない )
+;	dx = mpu-98/super-mpu statusport ( -1 なら設定しない )
+;
+;(out)	bp = 0
+;
+;説明	を行って下さい。super-mpu へ設定する場合、この function の発行の後、他
+;	の function を発行するまで 3 秒ほど wait をおいて下さい。
+;
+;-----------------------------------------------------------------------------
+;	play & stop
+;-----------------------------------------------------------------------------
+;
+;	曲データーへのポインターとサイズ拾得
+;
+;(in)	ax = 2000h
+;
+;(out)	es:di = pointer to music data
+;	dx:cx = music data buffer size
+;	bp    = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	現在の演奏状態の拾得
+;
+;(in)	ax = 2001h
+;
+;(out)	ax    = 0 停止中
+;	      = 1 演奏中
+;	bp    = 0
+;
+;(Break) df
+;
+;-----------------------------------------------------------------------------
+;
+;	total step の拾得
+;
+;(in)	ax = 2002h
+;
+;(out)	dx:ax = total step
+;	bp    = 0
+;
+;説明	total step は曲が終了しても進み続けます。新たな曲をスタート、もしくは
+;	ドライバーを終了するまで止まりません。
+;
+;-----------------------------------------------------------------------------
+;
+;	music timing flag の拾得
+;
+;(in)	ax = 2003h
+;
+;(out)	dx = music timing flag
+;	bp = 0
+;
+;説明	曲中で music timing flag で設定した値をプログラムで拾得するためのもの
+;	です。msdrv4 はこの値の初期化等は一切しませんので、設定と拾得を使って
+;	total step だけではタイミングがとれないとき等にご使用ください。
+;
+;-----------------------------------------------------------------------------
+;
+;	music timing flag の設定
+;
+;(in)	ax = 2004h
+;	dx = music timing flag
+;	bp = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	track データーへのポインターとサイズ拾得
+;
+;(in)	ax = 2010h
+;
+;(out)	es:di = pointer to track data
+;	cx    = max track
+;	ax    = 1 track size
+;	bp    = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	track の各種情報へのポインター拾得
+;
+;(in)	ax = 2011h
+;
+;(out)	es:di = track の現在の end flag へのポインター
+;	es:si = track の現在の program 番号へのポインター ( si = 0:未サポート )
+;	es:bx = track の現在のマスク情報へのポインター ( bx = 0:未サポート )
+;	ax    = 0
+;	cx    = 0
+;	dx    = 0
+;	bp    = 0
+;
+;(注意)	msdrv4l.exe は一部未サポートで、si,bx が 0 になります。
+;
+;-----------------------------------------------------------------------------
+;
+;	ssg データーへのポインターとサイズ拾得
+;
+;(in)	ax = 2020h
+;
+;(out)	es:di = pointer to ssg data
+;	cx    = max program
+;	ax    = 1 program size
+;	bp    = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	opn データーへのポインターとサイズ拾得
+;
+;(in)	ax = 2030h
+;
+;(out)	es:di = pointer to opn data
+;	cx    = max program
+;	ax    = 1 program size
+;	bp    = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	曲スタート
+;
+;(in)	ax = 2100h
+;
+;(out)	bp = 00h
+;
+;-----------------------------------------------------------------------------
+;
+;	曲スタート ( fade-in )
+;
+;(in)	ax = 2101h
+;	dx = fade-in time ( m second )
+;
+;(out)	bp = 00h
+;
+;-----------------------------------------------------------------------------
+;
+;	指定位置まで演奏時の初期化のみ
+;
+;(in)	ax = 2102h
+;
+;(out)	bp = 00h
+;
+;(out)	bp = 8000h ( msdrv4l.exe )
+;
+;(注意)	msdrv4l.exe にはインプリメントされていません。bp = 8000h でリターンし
+;	ます。
+;
+;-----------------------------------------------------------------------------
+;
+;	指定位置まで演奏時の演奏本体のみ
+;
+;(in)	ax = 2103h
+;
+;(out)	bp = 00h
+;
+;(out)	bp = 8000h ( msdrv4l.exe )
+;
+;(注意)	msdrv4l.exe にはインプリメントされていません。bp = 8000h でリターンし
+;	ます。
+;
+;-----------------------------------------------------------------------------
+;
+;	指定位置まで演奏を通常演奏にする
+;
+;(in)	ax = 2104h
+;
+;(out)	bp = 00h
+;
+;(out)	bp = 8000h ( msdrv4l.exe )
+;
+;(注意)	msdrv4l.exe にはインプリメントされていません。bp = 8000h でリターンし
+;	ます。
+;
+;-----------------------------------------------------------------------------
+;
+;	演奏開始時にチャンネルワークを初期化するか決定
+;
+;(in)	ax = 2105h
+;	bl = 0 初期化する ( 通常 )
+;	     1 初期化しない
+;
+;(out)	bp = 00h
+;
+;(out)	bp = 8000h ( msdrv4l.exe )
+;
+;(注意)	msdrv4l.exe にはインプリメントされていません。bp = 8000h でリターンし
+;	ます。
+;
+;-----------------------------------------------------------------------------
+;
+;	演奏開始時にチャンネルワークを初期化するかを拾得
+;
+;(in)	ax = 2106h
+;
+;(out)	bp = 00h
+;	bl = 0 初期化する ( 通常 )
+;	     1 初期化しない
+;
+;(out)	bp = 8000h ( msdrv4l.exe )
+;
+;(注意)	msdrv4l.exe にはインプリメントされていません。bp = 8000h でリターンし
+;	ます。
+;-----------------------------------------------------------------------------
+;
+;	stop pointer の設定
+;
+;(in)	ax    = 2107h
+;	bx    = track number ( 0 org )
+;	es:di = poiner
+;
+;(out)	bp = 00h
+;
+;(注意)	msdrv4l.exe にはインプリメントされていません。bp = 8000h でリターンし
+;	ます。
+;
+;-----------------------------------------------------------------------------
+;
+;	曲ストップ
+;
+;(in)	ax = 2200h
+;
+;(out)	bp = 00h
+;
+;-----------------------------------------------------------------------------
+;
+;	曲ストップ ( fade-out )
+;
+;(in)	ax = 2201h
+;	dx = fade-in time ( m second )
+;
+;(out)	bp = 00h
+;
+;-----------------------------------------------------------------------------
+;	joystick 関連
+;-----------------------------------------------------------------------------
+;
+;	joystick の情報拾得
+;
+;(in)	ah = 30h
+;
+;(out)	ax = pad の数 ( opn/opna に接続できる pad の数で、通常 2 )
+;	bx = sb16/118 に接続できる analog joystick の stick ( first )
+;	      0b = joystick-a の x 軸
+;	      1b = joystick-a の y 軸
+;	      2b = joystick-b の x 軸
+;	      3b = joystick-b の y 軸
+;	cx = sb16/118 に接続してある analog joystick の stick ( first )
+;	      0b = joystick-a の x 軸
+;	      1b = joystick-a の y 軸
+;	      2b = joystick-b の x 軸
+;	      3b = joystick-b の y 軸
+;	dx = sb16/118 に接続できる analog joystick の stick ( second )
+;	      0b = joystick-a の x 軸
+;	      1b = joystick-a の y 軸
+;	      2b = joystick-b の x 軸
+;	      3b = joystick-b の y 軸
+;	si = sb16/118 に接続してある analog joystick の stick ( second )
+;	      0b = joystick-a の x 軸
+;	      1b = joystick-a の y 軸
+;	      2b = joystick-b の x 軸
+;	      3b = joystick-b の y 軸
+;	di = 0
+;	bp = 00h
+;
+;(注意)	この function の処理は重いので何度も呼ぶことをさけ、一度で処理するよ
+;	うにした方が良いと思います。
+;
+;-----------------------------------------------------------------------------
+;
+;	joystick ( pad ) のデーター拾得
+;
+;(in)	ah = 31h
+;	al = pad number ( 255 にすると全ての pad の合計が出力される )
+;
+;(out)	bp = 0: 成功
+;		ax = pad data
+;		      0b = up
+;		      1b = down
+;		      2b = left
+;		      3b = right
+;		      4b = button 1
+;		      5b = button 2
+;
+;	bp = 1: pad number が異常もしくは pad が使用不可
+;		ax = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	joystick ( analog ) のデーター拾得
+;
+;(in)	ah = 32h
+;	al = joystick number ( 通常 0 )
+;	bl = stick number
+;	      0b = joystick-a の x 軸を拾得するか ( 0 = しない / 1 = する )
+;	      1b = joystick-a の y 軸を拾得するか ( 0 = しない / 1 = する )
+;	      2b = joystick-b の x 軸を拾得するか ( 0 = しない / 1 = する )
+;	      3b = joystick-b の y 軸を拾得するか ( 0 = しない / 1 = する )
+;
+;(out)	bp = 0: 成功
+;		ax = joystick button data
+;		      0b = button 1
+;		      1b = button 2
+;		      2b = button 3
+;		      3b = button 4
+;		cx = joystick-a の x 軸 value ( 0 - 65535 / calibrate はして
+;			いませんので app 側から行って下さい )
+;		dx = joystick-a の y 軸 value ( 0 - 65535 / calibrate はして
+;			いませんので app 側から行って下さい )
+;		si = joystick-b の x 軸 value ( 0 - 65535 / calibrate はして
+;			いませんので app 側から行って下さい )
+;		di = joystick-b の y 軸 value ( 0 - 65535 / calibrate はして
+;			いませんので app 側から行って下さい )
+;
+;	bp = 1: joystick number が異常もしくは joystick が使用不可
+;		ax = 0
+;		cx = 0
+;		dx = 0
+;		si = 0
+;		di = 0
+;
+;(注意)	この function の処理は重いので何度も呼ぶことをさけ、一度で処理するよ
+;	うにした方が良いと思います。
+;
+;(注意)	calibrate はしていませんので app 側で処理して下さい。あまり連続して読
+;	み込むとおかしな値を返すことがあります。
+;
+;kenji	2 回続けてデーターを拾得する際は ( x と y のとき等 )  1 回目だけ vsync
+;	待ちをするだけで大丈夫のようです。
+;
+;-----------------------------------------------------------------------------
+;	effect
+;-----------------------------------------------------------------------------
+;
+;	effect 発音
+;
+;(in)	ah = 40h
+;	bx = effect map number ( map の番号で、代理発音も行う )
+;
+;(out)	bp = 0: 発音成功
+;
+;	bp = 1: 発音失敗
+;
+;-----------------------------------------------------------------------------
+;
+;	effect 発音
+;
+;(in)	ah = 41h
+;	bx = effect data number ( effect data の番号を直接指定 )
+;
+;(out)	bp = 0: 発音成功
+;
+;	bp = 1: 発音失敗
+;
+;-----------------------------------------------------------------------------
+;
+;	effect 消音 ( 全ての効果音を止める )
+;
+;(in)	ah = 47h
+;
+;-----------------------------------------------------------------------------
+;
+;	effect buffer への pointer と size 拾得
+;
+;(in)	ah = 48h
+;
+;(out)	es:di = pointer to effect buffer
+;	dx:cx = effect buffer size
+;	bp = 0
+;
+;-----------------------------------------------------------------------------
+;	ssg effect
+;-----------------------------------------------------------------------------
+;
+;	ssg effect の設定を拾得
+;
+;(in)	ah = 50h
+;
+;(out)	bl = ssg effect tone の channel mask
+;		0b:ssg0 ( default = 1 )
+;		1b:ssg1 ( default = 1 )
+;		2b:ssg2 ( default = 1 )
+;	bh = ssg effect noise の channel mask
+;		0b:ssg0 ( default = 0 )
+;		1b:ssg1 ( default = 0 )
+;		2b:ssg2 ( default = 1 )
+;	cl = ssg effect envelope の channel mask
+;		0b:ssg0 ( default = 0 )
+;		1b:ssg1 ( default = 0 )
+;		2b:ssg2 ( default = 1 )
+;	bp = 0
+;
+;説明	default では bl = 111b, bh = 100b, cl = 100b となっており、tone のみの
+;	effect は ssg の ch0 - ch2 が割り当てられ ( 曲の演奏が一時的に中断して
+;	effect が発音される ) 、noise や envelope を使用する効果音は ssg の ch2
+;	が使用されます。通常はこのままでも良いと思います。
+;
+;-----------------------------------------------------------------------------
+;
+;	ssg effect を設定
+;
+;(in)	ah = 51h
+;	bl = ssg effect tone の channel mask
+;	bh = ssg effect noise の channel mask
+;	cl = ssg effect envelope の channel mask
+;
+;(out)	bp = 0
+;
+;-----------------------------------------------------------------------------
+;	opn effect
+;-----------------------------------------------------------------------------
+;
+;	opn effect の設定を拾得
+;
+;(in)	ah = 58h
+;
+;(out)	bx = opn effect notrol の channel mask
+;		0b:opn0 ( default = 1 )
+;		1b:opn1 ( default = 1 )
+;		2b:opn2 ( default = 1 )
+;		3b:opn3 ( default = 0 )
+;		4b:opn4 ( default = 0 )
+;		5b:opn5 ( default = 0 )
+;	cx = opn effect ch3only の channel mask
+;		0b:opn0 ( default = 0 )
+;		1b:opn1 ( default = 0 )
+;		2b:opn2 ( default = 1 )
+;		3b:opn3 ( default = 0 )
+;		4b:opn4 ( default = 0 )
+;		5b:opn5 ( default = 0 )
+;	bp = 0
+;
+;説明	default では bx = 000111b, cx = 000100b となっており、通常の effect は 
+;	opn の ch0 - ch2 が割り当てられ ( 曲の演奏が一時的に中断して effect が
+;	発音される ) 、ch3 の effect mode を使用する効果音 ( operator を parall
+;	el に freqency を設定できる mode ) は opn の ch2 が使用されます。通常は
+;	このままでも良いと思います。
+;
+;-----------------------------------------------------------------------------
+;
+;	opn effect を設定
+;
+;(in)	ah = 59h
+;	bx = opn effect notrol の channel mask
+;	cx = opn effect ch3only の channel mask
+;
+;(out)	bp = 0
+;
+;-----------------------------------------------------------------------------
+;	opl effect
+;-----------------------------------------------------------------------------
+;
+;	opl effect の設定を拾得
+;
+;(in)	ah = 60h
+;
+;(out)	bx = opl0-8 effect の channel mask
+;		0b:opl0  ( default = 1 )
+;		1b:opl1  ( default = 1 )
+;		2b:opl2  ( default = 1 )
+;		3b:opl3  ( default = 1 )
+;		4b:opl4  ( default = 1 )
+;		5b:opl5  ( default = 1 )
+;		6b:opl6  ( default = 1 )
+;		7b:opl7  ( default = 1 )
+;		8b:opl8  ( default = 1 )
+;	cx = opl9-10 effect の channel mask
+;		0b:opl9  ( default = 1 )
+;		1b:opl10 ( default = 1 )
+;		2b:opl11 ( default = 1 )
+;		3b:opl12 ( default = 1 )
+;		4b:opl13 ( default = 1 )
+;		5b:opl14 ( default = 1 )
+;		6b:opl15 ( default = 1 )
+;		7b:opl16 ( default = 1 )
+;		8b:opl17 ( default = 1 )
+;	bp = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	opl effect を設定
+;
+;(in)	ah = 61h
+;	bx = opl0 - opl8  の channel mask
+;	cx = opl9 - opl17 の channel mask
+;
+;(out)	bp = 0
+;
+;-----------------------------------------------------------------------------
+;	midi effect
+;-----------------------------------------------------------------------------
+;
+;	midi effect の設定を拾得
+;
+;(in)	ah = 68h
+;
+;(out)	bl   = midi effect track0 がどの midi ch に割り当てられているか
+;						( 0 - 31 / 255 = 無効 )
+;	bh   = midi effect track1
+;	cl   = midi effect track2
+;	ch   = midi effect track3
+;	dl   = midi effect track4
+;	dh   = midi effect track5
+;	di.l = midi effect track6
+;	di.h = midi effect track7
+;
+;-----------------------------------------------------------------------------
+;
+;	midi effect を設定
+;
+;(in)	ah = 69h
+;	bl   = midi effect track0 をどの midi ch に割り当てられてるか
+;						( 0 - 31 / 255 = 無効 )
+;	bh   = midi effect track1
+;	cl   = midi effect track2
+;	ch   = midi effect track3
+;	dl   = midi effect track4
+;	dh   = midi effect track5
+;	di.l = midi effect track6
+;	di.h = midi effect track7
+;
+;(out)	bp = 0
+;
+;-----------------------------------------------------------------------------
+;	sb16 mixer
+;-----------------------------------------------------------------------------
+;
+;	sb16 の mixer の data を拾得
+;
+;(in)	ah = 80h
+;	al = mixer address
+;
+;(out)	bp = 0
+;	al = data
+;
+;-----------------------------------------------------------------------------
+;
+;	sb16 の mixer に data を設定
+;
+;(in)	ah = 81h
+;	dl = mixer address
+;	dh = data
+;
+;(out)	bp = 0
+;
+;-----------------------------------------------------------------------------
+;	set opn / get opn
+;-----------------------------------------------------------------------------
+;
+;	set ssg ( check付き datasave付き )
+;
+;(in)	ah = 90h
+;	dl = ssg address ( ssg reg number)
+;	dh = ssg data
+;
+;(out)	bp = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	set ssg ( check無し datasave付き )
+;
+;(in)	ah = 91h
+;	dl = ssg address ( ssg reg number)
+;	dh = ssg data
+;
+;(out)	bp = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	set ssg ( check無し datasave無し )
+;
+;(in)	ah = 92h
+;	dl = ssg address ( ssg reg number)
+;	dh = ssg data
+;
+;(out)	bp = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	ssg mix を出力
+;
+;(in)	ah = 93h
+;
+;(out)	bp = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	opn から data 拾得する
+;
+;(in)	ah = 94h
+;	al = opn address ( opn reg number )
+;
+;(out)	ah = data
+;
+;-----------------------------------------------------------------------------
+;
+;	opn に data 出力 ( datasave無し )
+;
+;(in)	ah = 95h
+;	dl = opn address ( opn reg number )
+;	dh = data
+;
+;(out)	bp = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	opna に data 出力      (datasave無し)
+;
+;(in)	ah = 96h
+;	dl = opn address ( opn reg number )
+;	dh = data
+;
+;(out)	bp = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	opn/opna に data 出力  (datasave無し)
+;
+;(in)	ah = 97h
+;	dl = opn address ( opn reg number )
+;	dh = data
+;
+;(out)	bp = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	opn に data 出力       (datasave付き)
+;
+;(in)	ah = 98h
+;	dl = opn address ( opn reg number )
+;	dh = data
+;
+;(out)	bp = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	opna に data 出力      (datasave付き)
+;
+;(in)	ah = 99h
+;	dl = opn address ( opn reg number )
+;	dh = data
+;
+;(out)	bp = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	opn/opna に data 出力  (datasave付き)
+;
+;(in)	ah = 9ah
+;	dl = opn address ( opn reg number )
+;	dh = data
+;
+;(out)	bp = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	ch3 mode(=timer)を出力
+;
+;(in)	ah = 9bh
+;
+;(out)	bp = 0
+;
+;-----------------------------------------------------------------------------
+;	set opn / get opn ( get pointer )
+;-----------------------------------------------------------------------------
+;
+;	pointer 拾得 ( いつでも直接 far call できる )
+;	set ssg ( check付き datasave付き )
+;
+;(in)	ah    = a0h
+;
+;(out)	es:di = far pointer
+;	bp    = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	pointer 拾得 ( いつでも直接 far call できる )
+;	set ssg ( check無し datasave付き )
+;
+;(in)	ah    = a1h
+;
+;(out)	es:di = far pointer
+;	bp    = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	pointer 拾得 ( いつでも直接 far call できる )
+;	set ssg ( check無し datasave無し )
+;
+;(in)	ah    = a2h
+;
+;(out)	es:di = far pointer
+;	bp    = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	pointer 拾得 ( いつでも直接 far call できる )
+;	ssg mix を出力
+;
+;(in)	ah    = a3h
+;
+;(out)	es:di = far pointer
+;	bp    = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	pointer 拾得 ( いつでも直接 far call できる )
+;	opn から data 拾得する
+;
+;(in)	ah    = a4h
+;
+;(out)	es:di = far pointer
+;	bp    = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	pointer 拾得 ( いつでも直接 far call できる )
+;	opn に data 出力 ( datasave無し )
+;
+;(in)	ah    = a5h
+;
+;(out)	es:di = far pointer
+;	bp    = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	pointer 拾得 ( いつでも直接 far call できる )
+;	opna に data 出力      (datasave無し)
+;
+;(in)	ah    = a6h
+;
+;(out)	es:di = far pointer
+;	bp    = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	pointer 拾得 ( いつでも直接 far call できる )
+;	opn/opna に data 出力  (datasave無し)
+;
+;(in)	ah    = a7h
+;
+;(out)	es:di = far pointer
+;	bp    = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	pointer 拾得 ( いつでも直接 far call できる )
+;	opn に data 出力       (datasave付き)
+;
+;(in)	ah    = a8h
+;
+;(out)	es:di = far pointer
+;	bp    = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	pointer 拾得 ( いつでも直接 far call できる )
+;	opna に data 出力      (datasave付き)
+;
+;(in)	ah    = a9h
+;
+;(out)	es:di = far pointer
+;	bp    = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	pointer 拾得 ( いつでも直接 far call できる )
+;	opn/opna に data 出力  (datasave付き)
+;
+;(in)	ah    = aah
+;
+;(out)	es:di = far pointer
+;	bp    = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	pointer 拾得 ( いつでも直接 far call できる )
+;	ch3 mode(=timer)を出力
+;
+;(in)	ah    = abh
+;
+;(out)	es:di = far pointer
+;	bp    = 0
+;
+;-----------------------------------------------------------------------------
+;	lock
+;-----------------------------------------------------------------------------
+;
+;	msdrv lock number を拾得する
+;
+;(in)	ah = c0h
+;
+;(out)	bx = msdrv lock number
+;	bp = 0
+;
+;(説明)	msdrv に依存する常駐 tool が存在するのに msdrv が常駐解除されるのを防
+;	ぐための物です。
+;	msdrv lock number は msdrv の常駐時に 0 にされます。そして 0 のときに
+;	しか msdrv の常駐解除は出来ません。
+;	各常駐 tool は常駐時に function-c2h を使用して msdrv lock number を i
+;	nc します。これにより msdrv は常駐解除できなくなります。そして functi
+;	on-c0h で現在の msdrv lock number を拾得し、それを保持しておきます。
+;	各常駐 tool は常駐解放時に function-c0h を使用して msdrv lock number 
+;	を拾得し、常駐時に保持していた msdrv lock number と同じ値かを check 
+;	します。値が変わっていた場合には常駐解除をしてはいけません。同じ値な
+;	らば常駐解除をし、function-c3h で msdrv lock number を dec します。
+;	こうすることにより、本来なら解除できない常駐 tool ( msdrv も含む ) が
+;	解放されることが無くなります。
+;
+;-----------------------------------------------------------------------------
+;
+;	msdrv lock number を設定する
+;
+;(in)	ah = c1h
+;	bx = msdrv lock number
+;
+;(out)	bp = 0
+;
+;(説明)	通常、この funciton は使用すべきではありません。
+;
+;-----------------------------------------------------------------------------
+;
+;	msdrv lock number を inc する
+;
+;(in)	ah = c2h
+;
+;(out)	bp = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	msdrv lock number を dec する
+;
+;(in)	ah = c3h
+;
+;(out)	bp = 0
+;
+;-----------------------------------------------------------------------------
+;	msp config
+;-----------------------------------------------------------------------------
+;
+;	pcm driver の形式を msdrv4 へ伝える
+;
+;(in)	ah    = d0h
+;	al    = pcm type
+;	es:di = pointer to start pcm
+;	es:si = pointer to init pcm
+;	es:bx = pointer to pcm irq entry
+;	es:cx = pointer to release pcm irq
+;	es:dx = pointer to reinit pcm irq
+;
+;(out:ssb-pcm の場合)
+;	es:di = ssg effect の work への pointer
+;	ds:si = ssg を元に戻す への pointr
+;	cx:ax = ssg を ssg-pcm として初期化するへの pointer
+;	dx:bx = stop_ssg_pcm_flag への pointer を拾得
+;	bp    = 0
+;
+;(out:wss-pcm の場合)
+;	es:di = pointer to wss config
+;		es:di+0 byte = wss dma channel ( -1 なら未設定 )
+;	bp    = 0
+;
+;(out:sb16-pcm の場合)
+;	es:di = pointer to sb16 info
+;		es:di+0 word = sb16 base address
+;		es:di+2 byte = sb16 irq channel  ( -1 なら未設定 )
+;		es:di+3 byte = sb16 dma channel  ( -1 なら未設定 )
+;	bp    = 0
+;
+;(out:それ以外の場合)
+;	bp    = 0
+;
+;-----------------------------------------------------------------------------
+;	opn function
+;-----------------------------------------------------------------------------
+;
+;	opn の情報拾得 1
+;
+;(in)	ax = e000h
+;
+;(out)	ax = ボードの種類
+;		0:無し
+;		1:opn
+;		2:opna
+;	bx = ボードの割り込み番号
+;		 3:irq3  opn   ( int0  )
+;		10:irq10 opn   ( int41 )
+;		12:irq12 opn   ( int5  )
+;		13:irq13 opn   ( int6  )
+;	bp = 0
+;
+;	純粋に現在の opn の種類を返します。118 が opl mode のときには 0 になり
+;	ます。
+;	ボードの割り込み番号は、ディップスイッチ等で指定された値です。現在使用
+;	している割り込み番号ではありません。
+;
+;-----------------------------------------------------------------------------
+;
+;	opn の port 拾得
+;
+;(in)	ax = e008h ( or ah = 12h )
+;
+;(out)	ax = opn0 reg port
+;	bx = opn0 data port
+;	cx = opn1 reg port
+;	dx = opn1 data port
+;	si = 0 ( reserve )
+;	di = 0 ( reserve )
+;	bp = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	opn の port 設定
+;
+;(in)	ax = e009h ( or ah = 13h )
+;	di = opn0 reg port ( -1 なら設定しない )
+;	bx = opn0 data port ( -1 なら設定しない )
+;	cx = opn1 reg port ( -1 なら設定しない )
+;	dx = opn1 data port ( -1 なら設定しない )
+;	si = -1
+;
+;	bp = 0
+;
+;-----------------------------------------------------------------------------
+;	opl function
+;-----------------------------------------------------------------------------
+;
+;	opl の情報拾得
+;
+;(in)	ax = e100h
+;
+;(out)	ax = ボードの種類
+;		0 / 無し
+;		1 / opl2
+;		2 / opl2+opl2
+;		3 / opl3
+;	bp = 0
+;
+;	純粋に現在の opn の種類を返します。118 が opl mode のときには 3 になり
+;	ます。
+;
+;-----------------------------------------------------------------------------
+;
+;	opl の port 拾得
+;
+;(in)	ax = e108h
+;
+;(out)	ax = opl2 reg port
+;	bx = opl2 data port
+;	cx = opl2/3 reg port
+;	dx = opl2/3 data port
+;	si = 0 ( reserve )
+;	di = 0 ( reserve )
+;	bp = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	opl の port 設定
+;
+;(in)	ax = e109h ( or ah = 13h )
+;	di = opl2 reg port ( -1 なら設定しない )
+;	bx = opl2 data port ( -1 なら設定しない )
+;	cx = opl2/3 reg port ( -1 なら設定しない )
+;	dx = opl2/3 data port ( -1 なら設定しない )
+;	si = -1
+;
+;	bp = 0
+;
+;-----------------------------------------------------------------------------
+;	118 function
+;-----------------------------------------------------------------------------
+;
+;	118 の情報拾得
+;
+;(in)	ax = f000h
+;
+;(out)	al = 118 を実装しているか
+;		 0b: 0:118 が付いていない
+;		     1:118 が付いている
+;		 1b: 0:118-opna mode
+;		     1:118-opl mode
+;		 2b: 0:118-opna mode にできない
+;		     1:118-opna mode にできる
+;		 3b: 0:118-opl mode にできない
+;		     1:118-opl mode にできる
+;		 4b: 0:118-wss が使用できない
+;		     1:118-wss が使用できる
+;		 5b: 0:118-joystick が使用できない
+;		     1:118-joystick が使用できる
+;		 6b: 0:118-midi が使用できない
+;		     1:118-midi が使用できる ( 未完成 )
+;		 7b: reserved
+;	ah = 0 ( reserved )
+;	bp = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	118-opna / 118-opl の切り替え
+;
+;sb16 と 118 の２枚差しの場合、118 を opl mode へ切り替えることは出来ない。
+;
+;(注意)	118 を opl mode にした場合、ハードの仕様により opn 割り込みが使用でき
+;	なくなります。以前に opn 割り込みを使用していた場合、自動的に timer0 
+;	が使用されます。
+;
+;(in)	ax = f001h
+;	dl = mode
+;		0:opna mode
+;		1:opl mode
+;
+;(out)	bp = 0
+;
+;-----------------------------------------------------------------------------
+;	sb function
+;-----------------------------------------------------------------------------
+;
+;	sb の情報拾得 1
+;
+;(in)	ax = f100h
+;
+;(out)	ax = ボードの種類
+;		0:無し
+;		1:sb1.0/1.5
+;		2:sb2.0
+;		3:sbpro
+;		4:sbpro2
+;		5:sb16,sbawe32
+;	bp = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	sb の base address port 拾得
+;
+;(in)	ah = f108h ( or ah = 15h )
+;
+;(out)	ax = sb base address
+;	bx = 0 ( reserve )
+;	cx = 0 ( reserve )
+;	dx = 0 ( reserve )
+;	si = 0 ( reserve )
+;	di = 0 ( reserve )
+;	BP = 0
+;
+;-----------------------------------------------------------------------------
+;
+;	sb の base address port 設定
+;
+;(in)	ah = f109h ( or ah = 16h )
+;	di = sb base address
+;	bx = -1
+;	cx = -1
+;	dx = -1
+;	si = -1
+;
+;(out)	BP = 0
+;
+
+
+==============================================================================
+==============================================================================
+	track データー
+==============================================================================
+==============================================================================
+
+
+【概要】
+	　各 track 毎に以下のデーターがあります。このデーターの後に _midi_ch 
+	の値によって決められた、ssg/opn/opl/midi の 4 type 個別データーのどれ
+	かがが続きますが、それらは非公開です。
+
+
+_CH_POINTER	DD	?		; 次の ms data への pointer
+_DRIVER_MODE	DB	?		; driver mode
+					;   0 = 4 byte mode keyNO/step/gate/vel
+					;   1 = 3 byte mode keyNO/step/gate
+_MLOOP_SP	DW	?		; loop の stack pointer
+_MLOOP_DATA0	DD	?		; loop0 の戻り場所の pointer
+_MLOOP_FLAG0	DB	?		; loop0 の残り回数
+_MLOOP_DATA1	DD	?		; loop1 の戻り場所の pointer
+_MLOOP_FLAG1	DB	?		; loop1 の残り回数
+_MLOOP_DATA2	DD	?		; loop2 の戻り場所の pointer
+_MLOOP_FLAG2	DB	?		; loop2 の残り回数
+_MLOOP_DATA3	DD	?		; loop3 の戻り場所の pointer
+_MLOOP_FLAG3	DB	?		; loop3 の残り回数
+_MLOOP_DATA4	DD	?		; loop4 の戻り場所の pointer
+_MLOOP_FLAG4	DB	?		; loop4 の残り回数
+_MLOOP_DATA5	DD	?		; loop5 の戻り場所の pointer
+_MLOOP_FLAG5	DB	?		; loop5 の残り回数
+_MLOOP_DATA6	DD	?		; loop6 の戻り場所の pointer
+_MLOOP_FLAG6	DB	?		; loop6 の残り回数
+_MLOOP_DATA7	DD	?		; loop7 の戻り場所の pointer
+_MLOOP_FLAG7	DB	?		; loop7 の残り回数
+_PITCH_BEND	DW	?		; ピッチベンド
+_PORTAMENTO	DW	?		; ポルタメントの値
+_PORTAMENTO_VAL	DW	?		; ポルタメントの幅
+_PORTAMENTO_END	DW	?		; ポルタメントの最終地(0=ポルタしない)
+_VOL_DATA	DB	?		; volume
+_STEP		DB	?		; 残り step
+_MIDI_CH	DB	?		; 出力チャンネル
+_press_flag	db	?		; press data を使用している最中か
+_press_data	db	?		; press end を書き込む前のデーター
+_press_pointer	dd	?		; press data の終了時に戻る場所
+
+
+==============================================================================
+==============================================================================
+	.ssg file
+==============================================================================
+==============================================================================
+
+
+【概要】
+	　1 つの program ( 音色 ) は音色データーと名前データーの 2 つから成っ
+	ています。そして 1 つの .ssg file には 256 program 分のデーターが入っ
+	ています。なお、最後の program はエディット用です。
+
+
+【.ssg ファイルの構成】
+	0000h 音色データー ( 1 program = 16 byte / 16 byte * 256 program )
+	1000h 名前データー ( 1 program = 12 byte / 12 byte * 256 program )
+	1c00h end
+
+
+【音色データー】
+	　1 program に 16 バイトづつ音色データーが存在します。以下にデーター形
+	式を記します。
+
+    0000hw aco & pco & pdelay
+              |D15 D14 D13 D12 D11|D10  D9  D8  D7  D6| D5  D4  D3  D2  D1  D0|
+              |        aco        |        pco        |         pdelay        |
+    0002hw pm & dr & sr
+              |D15 D14 D13 D12 D11 D10| D9  D8  D7  D6  D5| D4  D3  D2  D1  D0|
+              |           pm          |         dr        |         sr        |
+　　0004hb pwave & psp
+                                              | D7  D6  D5| D4  D3  D2  D1  D0|
+                                              |   pwave   |        psp        |
+　　0005hb tone & noise & nm1 ( nm の 1 bit ) & noise周波数
+                                           | D7 | D6  | D5| D4  D3  D2  D1  D0|
+                                           |tone|noise|nm1|    noise周波数    |
+    0006hw rrl ( rr の 0 - 1 bit ) & sl & am & adelay
+              |D15 D14|D13 D12 D11 D10| D9  D8  D7  D6| D5  D4  D3  D2  D1  D0|
+              | ＲＲL |      ＳＬ     |     ＡＭ      |      ＡＤＥＬＡＹ     |
+　　0008hb awave & asp
+                                              | D7  D6  D5| D4  D3  D2  D1  D0|
+                                              |   awave   |        asp        |
+    0009hb nm0 ( nm の 0 bit ) & rrh ( rr の 2 - 3 bit ) & ar
+                                              | D7| D6  D5| D4  D3  D2  D1  D0|
+                                              |nm0|  rrh  |         ar        |
+    000ahb afreq & pfreq
+                                              | D7  D6  D5  D4| D3  D2  D1  D0|
+                                              |     afreq     |     pfreq     |
+    000bhb nwave & nsp
+                                              | D7  D6  D5| D4  D3  D2  D1  D0|
+                                              |   nwave   |        nsp        |
+
+    000chW nm3,nm2 ( nm の 2 - 3 bit ) & nfreq & nco & ndelay
+             |D15 D14| D13 D12 D11 D10| D9  D8  D7  D6| D5  D4  D3  D2  D1  D0|
+             |NM3 NM2|      nfreq     |       nco     |         ndelay        |
+    000ehb 未使用
+    000fhb 未使用
+
+
+【名前データー】
+	　1 program に 12 バイトづつ名前データーが存在します。ascii 文字列で、
+	空白は " " ( 20h ) で埋まっています。コントロールコード等は含まないで
+	下さい。
+
+
+==============================================================================
+==============================================================================
+	.opn file
+==============================================================================
+==============================================================================
+
+
+【概要】
+	　1 つの program ( 音色 ) は音色データーと名前データーの 2 つから成っ
+	ています。そして 1 つの .opn file には 256 program 分のデーターが入っ
+	ています。なお、最後の program はエディット用です。
+
+
+【.opn ファイルの構成】
+	0000h 音色データー ( 1 program = 48 byte / 48 byte * 256 program )
+	3000h 名前データー ( 1 program = 12 byte / 12 byte * 256 program )
+	3c00h end
+
+
+【音色データー】
+	　1 program に 48 バイトづつ音色データーが存在します。以下にデーター形
+	式を記します。音色データーの最後に音色 type が入っており、これにより o
+	pn / opl の判別が出来ます。
+
+
+【opn mode 時 ( 音色 type = 0 ) 】
+    0000hb fb/alg
+                                              | D7  D6| D5  D4  D3| D2  D1  D0|
+                                              |未使用 |     fb    |    alg    |
+    0001hb op1 の dt & mt
+    0002hb op3 の dt & mt
+    0003hb op2 の dt & mt
+    0004hb op4 の dt & mt
+                                              | D7| D6  D5  D4| D3  D2  D1  D0|
+                                              |未 |     dt    |       mt      |
+    0005hb op1 の tl
+    0006hb op3 の tl
+    0007hb op2 の tl
+    0008hb op4 の tl
+                                              | D7| D6  D5  D4  D3  D2  D1  D0|
+                                              |未 |             tl            |
+    0009hb op1 の ks & ar
+    000Ahb op3 の ks & ar
+    000Bhb op2 の ks & ar
+    000Chb op4 の ks & ar
+                                              | D7  D6| D5| D4  D3  D2  D1  D0|
+                                              |   ks  |未 |         ar        |
+    000Dhb op1 の amon & dr
+    000Ehb op3 の amon & dr
+    000Fhb op2 の amon & dr
+    0010hb op4 の amon & dr
+                                              | D7 |D6  D5| D4  D3  D2  D1  D0|
+                                              |amon|未使用|         dr        |
+    0011hb op1 の sr
+    0012hb op3 の sr
+    0013hb op2 の sr
+    0014hb op4 の sr
+                                              | D7  D6  D5| D4  D3  D2  D1  D0|
+                                              |   未使用  |         sr        |
+    0015hb op1 の sl & rr
+    0016hb op3 の sl & rr
+    0017hb op2 の sl & rr
+    0018hb op4 の sl & rr
+                                              | D7  D6  D5  D4| D3  D2  D1  D0|
+                                              |       sl      |       rr      |
+    0019hb psp          ( 位相変調速度 )
+    001Ahb pco          ( 位相変調回数 )
+    001Bhb pm           ( 位相変調度 )
+    001Chb pdelay       ( 位相変調遅延 )
+    001Dhb pwave        ( 位相変調波形 )
+    001Ehb asp          ( 振幅変調速度 )
+    001Fhb aco          ( 振幅変調回数 )
+    0020hb am           ( 振幅変調度 )
+    0021hb adelay       ( 振幅変調遅延 )
+    0022hb awave        ( 振幅変調波形 )
+           & as         ( 振幅 lfo の op mask )
+                                              | D7| D6| D5| D4| D3  D2  D1  D0|
+                                              |op4|op2|op3|op1|      awave    |
+    0023hb ams & pms & lr ( lf は 00b に固定 )
+                                              | D7  D6| D5  D4| D3| D2  D1  D0|
+                                              | lr=00 |  ams  |未 |    pms    |
+						d3 は未使用です。
+    0024hb afreq & pfreq
+                                              | D7  D6  D5  D4| D3  D2  D1  D0|
+                                              |      afreq    |      pfreq    |
+    0025hb 未使用
+    0026hb 未使用
+    0027hb 未使用
+    0028hb 未使用
+    0029hb 未使用
+    002ahb 未使用
+    002bhb 未使用
+    002chb 未使用
+    002dhb 未使用
+    002ehb 未使用
+    002fhb 音色 type ( opn/opna mode )
+                                              | D7  D6  D5  D4  D3  D2  D1  D0|
+                                              |  0   0   0   0   0   0   0   0|
+
+
+【sb16 の opl mode 時 ( 音色 type = 1 ) 】
+	　2op mode 時には op3 と op4 に関するパラメーターが無効となります。
+
+    0000hb fb/cnt
+                                              | D7  D6| D5  D4  D3| D2 |D1  D0|
+                                              |未使用 |     fb    |無効|  cnt |
+    0001hb op1 の mt
+    0002hb op2 の mt
+    0003hb op3 の mt
+    0004hb op4 の mt
+                                              | D7| D6  D5  D4| D3  D2  D1  D0|
+                                              |未 |    無効   |       mt      |
+    0005hb op1 の tl
+    0006hb op2 の tl
+    0007hb op3 の tl
+    0008hb op4 の tl
+                                              | D7| D6  D5  D4  D3  D2  D1| D0|
+                                              |未 |           tl          |無 |
+    0009hb op1 の ks & ar
+    000Ahb op2 の ks & ar
+    000Bhb op1 の ks & ar
+    000Chb op4 の ks & ar
+                                              | D7  D6| D5| D4  D3  D2  D1| D0|
+                                              |   ks  |未 |       ar      |無 |
+    000Dhb op1 の am & dr
+    000Ehb op2 の am & dr
+    000Fhb op3 の am & dr
+    0010hb op4 の am & dr
+                                              | D7 |D6  D5| D4  D3  D2  D1| D0|
+                                              | am |未使用|       dr      |無 |
+    0011hb op1 の vib & egt & ksr & ws
+    0012hb op2 の vib & egt & ksr & ws
+    0013hb op3 の vib & egt & ksr & ws
+    0014hb op4 の vib & egt & ksr & ws
+                                              | D7  D6| D5| D4| D3| D2  D1  D0|
+                                              |未使用 |vib|egt|ksr|     ws    |
+    0015hb op1 の sl & rr
+    0016hb op2 の sl & rr
+    0017hb op3 の sl & rr
+    0018hb op4 の sl & rr
+                                              | D7  D6  D5  D4| D3  D2  D1  D0|
+                                              |       sl      |       rr      |
+    0017hb 未使用
+    0018hb 未使用
+    0019hb psp          ( 位相変調速度 )
+    001Ahb pco          ( 位相変調回数 )
+    001Bhb pm           ( 位相変調度 )
+    001Chb pdelay       ( 位相変調遅延 )
+    001Dhb pwave        ( 位相変調波形 )
+    001Ehb asp          ( 振幅変調速度 )
+    001Fhb aco          ( 振幅変調回数 )
+    0020hb am           ( 振幅変調度 )
+    0021hb adelay       ( 振幅変調遅延 )
+    0022hb awave        ( 振幅変調波形 )
+           & as         ( 振幅 lfo の op mask )
+                                              | D7  D6  D5  D4| D3  D2  D1  D0|
+                                              |       as      |      awave    |
+    0023hb 未使用
+    0024hb afreq & pfreq
+                                              | D7  D6  D5  D4| D3  D2  D1  D0|
+                                              |      afreq    |      pfreq    |
+    0025hb 未使用
+    0026hb 未使用
+    0027hb 未使用
+    0028hb 未使用
+    0029hb 未使用
+    002ahb 未使用
+    002bhb 未使用
+    002chb 未使用
+    002dhb 未使用
+    002ehb 未使用
+    002fhb 音色 type ( opl2/opl3 の 2op/4op mode )
+                                              | D7  D6  D5  D4  D3  D2  D1  D0|
+                                              |  0   0   0   0   0   0   0   1|
+
+
+【名前データー】
+	　1 program に 12 バイトづつ名前データーが存在します。ascii 文字列で、
+	空白は " " ( 20h ) で埋まっています。コントロールコード等は含まないで
+	下さい。
+
+
+==============================================================================
+==============================================================================
+	.ms file
+==============================================================================
+==============================================================================
+
+
+【.ms file header 】
+	　.ms file header の size は計 00a0h byte です。各 track への far poin
+	ter が入っています。なお、現バージョンでは 90h ～ 9bh は 全て 0 になっ
+	ています。コンバーター等のツールを作るときには、このデーターが 0 の事
+	を確認して下さい。
+
+	0000hd  track1  へのポインター ( far pointer )
+	0004hd  track2  へのポインター ( far pointer )
+	0008hd  track3  へのポインター ( far pointer )
+	                     .
+	                     .
+	                     .
+	008chd  track36 へのポインター ( far pointer )
+	0090hd  現バージョンでは必ず 0
+	0094hd  現バージョンでは必ず 0
+	0098hd  現バージョンでは必ず 0
+	009chd  file size ( dword size / not far pointer )
+	00a0h	end
+
+
+【track data の諸注意】
+	　track data は 4 byte 単位のデーターで構成されています。track data の
+	並び方は必ず track 順でなくてはなりません。以下のような置き方は不可で
+	す。
+		track1 data
+		track3 data
+		track2 data
+	　また .ms file header が同じデーターをを指すことも禁止します。必ず実
+	データーがあるようにして下さい。
+
+
+【track data】
+	　track data は 4 byte 単位のデーターです。以下に format を記します。
+
+    +-------------------------+---+----------------+--------------+-----------+
+    |name                     |1b |2byte           |3byte         |4byte      |
+    +-------------------------+---+----------------+--------------+-----------+
+    |key                      |00h|step            |gate          |vel        |
+    |                         |01h|step            |gate          |vel        1|
+    |                         | . |step            |gate          |vel        |
+    |                         | . |step            |gate          |vel        |
+    |                         | . |step            |gate          |vel        |
+    |                         |7fh|step            |gate          |vel        |
+    +-------------------------+---+----------------+--------------+-----------+
+    |set time base            |80h|time base low   |time base high|9eh        |
+    |sb16 command             |81h|data 0          |data 1        |data 2     |
+    |  change 2op mode        |81h|00h             |00h           |00h        |
+    |  change 4op mode(*1)    |81h|00h             |00h           |01h        |
+    |  ymf232 y command (a1=0)|81h|80h             |reg address   |data       |
+    |  ymf232 y command (a1=1)|81h|81h             |reg address   |data       |
+    |program change           |82h|program number  |9eh           |9eh        |
+    |set tempo                |8ah|tempo data      |9eh           |9eh        |
+    |ssg program              |8ch|program num     |data num      |data       |
+    |opn program              |8eh|program num     |data num      |data       |
+    |y command                |94h|opn reg number  |opn reg data  |9eh        |
+    |no operation             |96h|?               |?             |9eh        |
+    |loop end                 |9bh|loop number     |9eh           |9eh        |
+    |loop start               |9ch|9eh             |9eh           |9eh        |
+    |set track detune(ssg/opn)|9dh|detune value    |9eh           |9eh        |
+    |no operation             |9eh|9eh             |9eh           |9eh        |
+    |set pan                  |9fh|pan value       |9eh           |9eh        |
+    |set pitch bend           |a4h|value low       |value high    |9eh        |
+    |set hard lfo             |a6h|data            |9eh           |9eh        |
+    |set max track            |a8h|max track       |9eh           |9eh        |
+    |set ch3 mode             |a9h|ch3 mode data   |9eh           |9eh        |
+    |set ch3 op mask          |aah|mask data       |9eh           |9eh        |
+    |set pitch lfo patameter  |abh|parameter number|data          |9eh        |
+    |set amp lfo patameter    |ach|parameter number|data          |9eh        |
+    |set portamento value     |adh|value low       |value high    |9eh        |
+    |set portamento end value |aeh|value low       |value high    |9eh        |
+    |set now portamento value |afh|value low       |value high    |9eh        |
+    |exclusive sum clear      |c2h|9eh             |9eh           |9eh        |
+    |send exclusive datar     |c3h|send data       |9eh           |9eh        |
+    |send exclusive sum       |c4h|9eh             |9eh           |9eh        |
+    |set opna rhy data        |d0h|step            |rhythm data   |9eh        |
+    |set opna rhy bass datad  |d1h|bass data       |9eh           |9eh        |
+    |set opna rhy snare data  |d2h|snare data      |9eh           |9eh        |
+    |set opna rhy top data    |d3h|top data        |9eh           |9eh        |
+    |set opna rhy hh data     |d4h|hh data         |9eh           |9eh        |
+    |set opna rhy tom data    |d5h|tom data        |9eh           |9eh        |
+    |set opna rhy rim data    |d6h|rim data        |9eh           |9eh        |
+    |set rolbase              |ddh|step            |address msb   |address    |
+    |set rolpara              |deh|step            |address lsb   |data       |
+    |set roldev               |dfh|step            |device id     |model id   |
+    |bank program             |e2h|step            |program number|bank number|
+    |set midi channel         |e6h|step            |midi channel  |9eh        |
+    |set gradation tempo      |e7h|step            |tempo data(*2)|no use(*3) |
+    |after c                  |eah|step            |pressure      |9eh        |
+    |midi control             |ebh|step            |data          |data       |
+    |program change with step |ech|step            |program number|9eh        |
+    |after k                  |edh|step            |key           |data       |
+    |set pitch bend with step |eeh|step            |value low     |value high |
+    |track end                |feh|9eh             |9eh           |9eh        |
+    |music end                |ffh|9eh             |9eh           |9eh        |
+    +-------------------------+---+----------------+--------------+-----------+
+
+(*1)	　midi channel が 112,114,116,121,123,125 の channel で指定可能で 4op 
+	mode にするとその channel の直後の channel が使用不可能になります。つ
+	まり 2op mode なら 2channel として使用可能な物が 4op mode にすると 1ch
+	annel になると言うことです。なお、デフォルトでは全て 2op mode です。
+(*2)	　それ以前に set tempo コマンドで設定された tempo * tempo data / 64 を
+	すると tempo が求められる。たとえば以前の tempo = 120 で tempo data = 
+	128 だと 2 倍の 240 となる。この後に tempo data = 64 とすると元の 120 
+	に戻る。set gradation tempo コマンドで tempo を設定しても、この元とな
+	る tempo は変更されず、set tempo コマンドによって変更される。
+(*3)	　このパラメーターは無視される。通常 0 に設定する。
+
+==============================================================================
+==============================================================================
+	.msf file
+==============================================================================
+==============================================================================
+
+
+【.msf file header 】
+	　.msf file header は .mf file header と同じです。
+
+
+【track data】
+	　track data は .ms と違い、可変長です。.ms file で 9eh が全て削除され
+	ます。たとえば、set tempo ( 8ah ) は .ms file 上では
+		8ah,tempo data,9eh,9eh
+	の 4 byte ですが、.msf file では
+		8ah,tempo data
+	の 2 byte コマンドとなります。なお、9eh 自身は 1 byte の nop として機能
+	します。
+
+	　その他、.msf file ではデーターを小さくするために key データーの vel 
+	を削除するモードがあります。この場合、vol コマンドで vel を指定すること
+	になります。
+	　ms2msf は自動的に vel あり / vel なし のうち小さくなる方を取ります。
+	このモードを切り替えるコマンドが set driver mode です。個のコマンドは 2
+	byte コマンドです。以下に format を記します。
+
+    +-------------------------+---+----------------+--------------+-----------+
+    |name                     |1b |2byte           |3byte         |4byte      |
+    +-------------------------+---+----------------+--------------+-----------+
+    |set vol                  |85h|vel             | ---          | ---       |
+    |set driver mode          |8bh|mode(0=with vel)| ---          | ---       |
+    |nop                      |9eh| ---            | ---          | ---       |
+    +-------------------------+---+----------------+--------------+-----------+
+    |key                      |00h|step            |gate          | ---       |
+    |( in case                |01h|step            |gate          | ---       |
+    |  driver mode = 1 )      | . |step            |gate          | ---       |
+    |                         | . |step            |gate          | ---       |
+    |                         | . |step            |gate          | ---       |
+    |                         |7fh|step            |gate          | ---       |
+    +-------------------------+---+----------------+--------------+-----------+
+    |key                      |00h|step            |gate          |vel        |
+    |( in case                |01h|step            |gate          |vel        |
+    |  driver mode = 0 )      | . |step            |gate          |vel        |
+    |                         | . |step            |gate          |vel        |
+    |                         | . |step            |gate          |vel        |
+    |                         |7fh|step            |gate          |vel        |
+    +-------------------------+---+----------------+--------------+-----------+
+
+	　以下のデーターは 4 byte 単位ではありません。
+
+    +-------------------------+-+------------------------------+
+    |name                     | |data                          |
+    +-------------------------+-+------------------------------+
+    |press data(*1)           |0|83h                           |
+    |                         |1|start pointer (32 bit / low)  |
+    |                         |2|start pointer                 |
+    |                         |3|start pointer                 |
+    |                         |4|start pointer (high)          |
+    |                         |5|end pointer (32 bit / low)    |
+    |                         |6|end pointer                   |
+    |                         |7|end pointer                   |
+    |                         |8|end pointer (high)            |
+    +-------------------------+-+------------------------------+
+    |press end(*1)            |0|84h                           |
+    +-------------------------+-+------------------------------+
+    |ssg packet(*2)           |0|8dh                           |
+    |                         |1|program num                   |
+    |                         |2|data num                      |
+    |                         |3|length                        |
+    |                         |4|data...                       |
+    +-------------------------+-+------------------------------+
+    |opn packet(*2)           |0|8fh                           |
+    |                         |1|program num                   |
+    |                         |2|data num                      |
+    |                         |3|length                        |
+    |                         |4|data...                       |
+    +-------------------------+-+------------------------------+
+    |send exclusive packet(*3)|0|c5h                           |
+    |                         |1|length (low)                  |
+    |                         |2|length (high)                 |
+    |                         |3|data...                       |
+    +-------------------------+-+------------------------------+
+
+(*1)	　press data は曲データーを節約するための物で、以前にある同じデーター
+	が ms2msf により press data に置き換えられます。
+	msdrv4 はこれを見つけると
+	  1)  track データーの先頭 pointer ( far pointer ) へ end pointer ( 32
+	      bit pointer ) を加算します。
+	　2)  1 で求めた pointer の位置のデーターを保存します。
+	　3)  1 で求めた pointer の位置へ press end ( 84h ) を書き込みます。
+	  4)  現在の演奏 pointer を保存します。
+	  5)  演奏 pointer を track データーの先頭 pointer ( far pointer ) と
+              start pointer ( 32 bit pointer ) を加算したものにします。
+	この後は通常演奏となります。そして msdrv4 が press end を見つけると
+	　6)  press end ( 84h ) の位置へ 2 で保存したデーターを書き込み、元に
+	　　　戻します。
+	　7)  演奏 pointer を 5 で保存したものに +9 をしたものとします。
+	これで press data が終了します。
+(*2)	　ssg packet / opn packet は 4 byte 単位のデーターではありません。命令
+	( 8dh / 8fh ) の次に最初のデーター番号、 1 byte でデーターの長さが入り
+	その後に data が入っています。
+(*3)	　send exclusive packet は 4 byte 単位のデーターではありません。命令 ( 
+	c5h ) の次に 1 word でデーターの長さが入り、その後に data が入っていま
+	す。
+
+
+【ms2msf の動作】
+	　track 単位で小さくなる driver mode を使います。
+
+
+
