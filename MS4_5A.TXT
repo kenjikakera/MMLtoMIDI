@@ -1,0 +1,461 @@
+
+	MSDRV4.EXE version 4.5a
+	MSP.COM version 4.5a
+	MSMIXSB.COM version 4.5a
+
+						by KENJI All right reserved
+
+
+【各ファイルの簡単な説明】
+	　簡単に各ファイルの説明をします。
+
+	MSDRV4.EXE	fm / midi の 音楽ドライバーです。pcm を使用するには別途
+			の pcmdriver のセットを使用して下さい。
+	MSP.COM		MSDRV4.EXE 用の曲ファイル .MS を演奏するための物です。
+	MSMIXSB.COM	SoundBlaster 16/98 の mixer ct1745 設定プログラムです。
+
+
+【簡単な使用方法】
+	　以下のようにコマンドライン上から入力して、MSDRV4.EXE を常駐させて下
+	さい。
+	>msdrv4.exe
+	　これで msdrv4.exe が常駐します。常駐後は msdrv4.exe 対応ツールが使用
+	できるようになります。
+
+
+【 msdrv4.exe 】
+	　msdrv4.exe は fm / midi 用の音楽ドライバーで、これを常駐させるとバッ
+	ククラウンドで fm / midi を演奏させることが可能となります。主にゲーム
+	等への組み込みを意識して作られていますが、その他の用途でも使用可能だと
+	思います。
+	　常駐時に opl / opn / midi を自動的に判別します。midi の優先順位は以
+	下の通りとなっています。
+		1) super-mpu ( midi-a,b )
+		2) mpu ( midi-a ) & sb16 ( midi-b )
+		3) mpu ( midi-a ) & rs-midi ( midi-b )
+		4) mpu ( midi-a )
+		5) sb16 ( midi-a ) & rs-midi ( midi-b )
+		6) sb16 ( midi-a )
+		7) rs-midi ( midi-a,b )
+	　rs-232c にモデム等が繋がっていると midi に rs-midi があると誤認しま
+	すので注意して下さい。
+	　起動時に opn と ssg の音色を初期化します。
+	　64kbyte 以上の巨大な曲を演奏することが可能です。option b で最大の曲
+	のサイズをサイズを指定して下さい。
+	　演奏中に [grph] キーを押すと曲の早送りをします。
+
+
+	Usage: MSDRV4 [option]
+
+	R			常駐解除
+
+				［バッファー関係］
+	Bn			曲バッファーのサイズを指定 ( 標準 = 32768 )
+	Tn			最大トラックを指定 ( 標準 = 36 )
+	Sn			ssg の音色数を設定 ( 標準 = 256 )
+	On			opn の音色数を設定 ( 標準 = 256 )
+
+				［opn 関係］
+	F0			opn を無効にする
+	WOPNn,m,d		opn 音源の wait を指定
+				 ( default WOPN1,3,3 / Wn,m,d でも可 )
+
+				［opl 関係］
+	WOPLn,m			opl 音源の wait を指定 ( defailt WOPL4,4 )
+
+				［midi-A 関係］
+	MA0			midi-A を無効にする
+	MA1[,dataport,statport]	midi-A を mpu-98 にする。dataport と statport 
+				を 16 進数で指定することができます。
+	MA2			midi-A を rs-midi にする
+	MA3			midi-A を rs-midi ( midi port B ) にする
+	MA128[,dataport,statport]midi-A を super-mpu port A にする
+	MA129[,dataport,statport]midi-A を super-mpu port B にする
+
+				［midi-B 関係］
+	MB0			midi-B を無効にする ( 標準 = midi-B は無効 )
+	MB1[,dataport,statport]	midi-B を mpu-98 にする。dataport と statport 
+				を 16 進数で指定することができます。
+	MB2			midi-B を rs-midi にする
+	MB3			midi-B を rs-midi ( midi port B ) にする
+	MB128[,dataport,statport]midi-B を super-mpu port A にする
+	MB129[,dataport,statport]midi-B を super-mpu port B にする
+
+				［volume 関係］
+	VSn	set ssg volume ( 0 - 127 )
+	VOn	set opn volume ( 0 - 127 )
+	VRn	set rhythm volume ( 0 - 127 )
+	VLn	set opl volume ( 0 - 127 )
+
+				［sb16 関係］
+	SBE0			環境変数を search しない ( 互換 dos 用 )
+	SBE1			sb16 port を search しない
+	SBAnn			sb16 port を指定 ( 16 進数 )
+	SBIn			sb16-dsp-pcm irq を指定 ( 10 進数、irq で指定 )
+	SBDn			sb16-dsp-pcm dma を指定 ( 0 or 3 )
+				  SBIn と SBDn は sb16 の dsp で使用します。AIn
+				で指定する music driver の irq とは違います。
+
+				［pc-9801-118 関係］
+	NM1			118-opl として使用する
+
+				［wss 関係］
+	WSSDn			wss 音源の dma を指定 (0,1,3 / pc9821npでは0,3)
+
+				［msdrv4 system 関係］
+	AR0			rs-midi を使用しない ( 指定すると rs-232c を ch
+				eck しなくなるので rs-232c を使用中に msdrv を
+				常駐させる場合等に有効です。 )
+	AI0			music driver 割り込みに timer0 割り込み を使う
+	AI2			music driver 割り込みに vsync 割り込み を使う
+	AI256			music driver 割り込みに opn 割り込み を使う
+	AI257			music driver 割り込みに mouse 割り込み を使う
+				　mouse 割り込みや vsync 割り込みを使用する場
+				合、tempo ズレが多くなったり、exclusive がちゃ
+				んと転送されないおそれがあります。特に vsync 
+				割り込みを使用する際には気を付けて下さい。
+
+				［その他］
+	PSn			[grph] を押したときの演奏 speed ( 0 - 15 )
+
+
+【 msp.com 】
+	　msp.com は msdrv4.exe 用の player & loader です。
+
+	usage : msp [options...] [filename[.ms]] [filename.ssg] [filename.opn]
+
+	/P		play ( .ms file 読み込み時は指定しなくても play します)
+	/S		stop
+	/En		sound effect
+	/Cn[,vol[,pan]]	sound pcm ( n = 0 - 255 )
+	/FIn		fade in ( n = m second )
+	/FOn		fade out ( n = m second )
+
+				［volume 関係］
+	/VSn		set ssg volume ( 0 - 127 )
+	/VOn		set opn volume ( 0 - 127 )
+	/VRn		set rhythm volume ( 0 - 127 )
+	/VLn		set opl volume ( 0 - 127 )
+
+				［midi-A 関係］
+	/MA0		midi-A を無効にする
+	/MA1[,data,stat]midi-A を mpu-98 にする。dataport と statport を 16 進
+			数で指定することができます。
+	/MA2		midi-A を rs-midi にする
+	/MA3		midi-A を rs-midi ( midi port B ) にする
+	/MA128[,data,stat]midi-A を super-mpu port A にする
+	/MA129[,data,stat]midi-A を super-mpu port B にする
+
+				［midi-B 関係］
+	/MB0		midi-B を無効にする ( 標準 = midi-B は無効 )
+	/MB1[,data,stat]midi-B を mpu-98 にする。dataport と statport を 16 進
+			数で指定することができます。
+	/MB2		midi-B を rs-midi にする
+	/MB3		midi-B を rs-midi ( midi port B ) にする
+	/MB128[,data,stat]midi-B を super-mpu port A にする
+	/MB129[,data,stat]midi-B を super-mpu port B にする
+
+				［pc-9801-118 関係］
+	/NM0			118-opna として使用する
+	/NM1			118-opl として使用する
+
+				［msdrv4 system 関係］
+	/AIn		select irq ( 0:tmer0 2:vsync 256:opn 257:mouse )
+
+
+【 msmixsb.com 】
+	　msp.com は msdrv4.exe を経由して sb16 の mixer 用を設定するツールで
+	す。これにより、mixer の設定にも sb16 用の常駐ソフトを使用する必要がな
+	くなります。
+
+	　msmixsb.com へ与えるコマンドは、ほぼ sb16set と同じですが、定義済み
+	のプリセットを sb16 の mixer へ設定することは出来ません。
+	　その他のコマンドはほぼ同等ですが、わざわざ / を付ける必要がなかった
+	り ( 付けても良い ) 、コマンドと値を区切る : を付ける必要がなくなって
+	いたりします。+ / - や on / off を指定するコマンドでは + / - でも on 
+	/ off でも指定でき、1 / 0 で指定することも可能です。
+
+	V			現在の mixer の状態を表示
+	Q-			これ以降の表示を禁止
+	Q+			表示の禁止を解除
+	R			mixer を初期化
+	Ml[,r]			master volume の設定		(l,r=0-255)
+	VOCl[,r]		voice volume の設定		(l,r=0-255)
+	MIDIl[,r]		midi volume の設定		(l,r=0-255)
+	CDl[,r]			cd volume の設定		(l,r=0-255)
+	LINEl[,r]		line volume の設定		(l,r=0-255)
+	MICm			mic volume の設定		(l,r=0-255)
+	TREBLEl[,r]		treble volume の設定		(l,r=0-255)
+	BASSl[,r]		bass volume の設定		(l,r=0-255)
+	AGC{on|off}		microphone automatic gain control の設定
+	IPGAINl,[r]		input gain の設定		(l,r=1,2,4,8)
+	OPGAINl,[r]		input gain の設定		(l,r=1,2,4,8)
+	OPSWmatching{+|-}...	output mixer switches の設定	(+=on,-=off)
+				matching:linel,liner,cdl,cdr,mic
+	IPLSWmatching{+|-}...	input mixer left switches の設定(+=on,-=off)
+				matching:midil,midir,linel,liner,cdl,cdr,mic
+	IPRSWmatching{+|-}...	input mixer right switches の設定(+=on,-=off)
+				matching:midil,midir,linel,liner,cdl,cdr,mic
+
+	　なお、sb16set では "sb16set m:,[ret]" とすると left, right ともに 0
+	に設定できたり "sb16set m:127,[ret]" とすると right を 0 に設定できた
+	りしますが、msmixsb.com では値の省略はいかなる場合でも error となりま
+	す。
+
+
+【対応デバイス】
+	[midi]
+	mpu98/mpu98-II	uart mode
+	super-mpu	super-mpu native mode ( 32ch )
+	sb16-98		mpu98 互換 uart mode ( port は自動検索します )
+	rs-midi		rs232c へ接続の midi ( 31.25kbps )
+	computer端子	sc55mk2/sc88 等の computer 端子 ( 31.25kbps )
+			sc88 は 32ch の使用可
+
+	[opn]
+	pc-9801-26k	ssg 3 / opn 3
+	pc-9801-86	ssg 3 / opn 6 / rhythm
+	pc-9801-118	ssg 3 / opn 6 / rhythm ( ただし pnp mode は不可 )
+	speak-board	ssg 3 / opn 6 / rhythm
+
+	[opl]
+	sb16-98		opl 18 ( 2op/4op も使用可能 )
+	pc-9801-118	opl 18 ( 2op/4op も使用可能 ただし pnp mode は不可 )
+
+
+【midi(mpu98)】
+	　mpu98 を付けている場合、option を付けずに msdrv4 を起動すると a-port
+	を mpu98、b-port を rs-midi にしようと試みます。よって mpu98 を付けて
+	いて rs-232c に modem 等を付けている場合には注意が必要です。 a-port の
+	みしか使わない 16 ch の soft に driver を組み込んで販売する際には /mb0
+	option を付けて、b-port を rs-midi にしないようにして下さい。
+
+
+【wss】
+	　wss-pcm は dma channel を指定する必要があります。その方法には msdrv4
+	の起動 option で指定 ( = WSSDn )、pcmdriver の起動 option で指定 ( = D
+	n )、pcmdriver のfunction で設定 ( function-07h ) のどれかを行って下さ
+	い。
+	  wss-pcm で指定できる dma は 0,1,3 ですが pc-9821np では 1 が使用不可
+	能です。他の機種では dma1 が空いているので、これを使用すると良いでしょ
+	う。
+	　msdrv4-pcm driver である mspxwss/mspmwss は win95-wss driver が組み
+	込まれていて、[デバイスの使用] のチェックボックスの印が出ている場合に
+	は使用できません。チェックボックスの印が出ていないときや win95-wss dr
+	iver が組み込まれていない場合に mspxwss/mspmwss は動作します。
+	　win95-wss driver が組み込まれている場合、以下のようにして [デバイス
+	の使用] のチェックボックスの印を消してください。[コントロールパネル] 
+	-> [システム] -> [デバイスマネージャ(タブコントロールで選んでください
+	)] -> [mate-x pcm] -> [情報(タブコントロール)]で、[デバイスの使用]のチ
+	ェックボックスの印を消して、win95 が wss を使用しないようにしてくださ
+	い。なお、この設定を変えても win95 の再起動の必要はありません。
+
+
+【pc-9801-86b】
+	　wss 搭載機種へ 86b を装備する場合には wss を無効にして下さい。86b と
+	wss の nec sound id が同じポートですと msdrv4 が 86b を [opna+adpcm] 
+	と誤認識します。一応opna として動作するみたいですがハードを破壊したり
+	誤動作する可能性があります。
+	　win95+86b での msdrv4 は、win95-86b driver を組み込んだ状態でも組み
+	込まない状態でも動作します。
+	　msdrv4-pcm driver である mspx86/mspm86 は win95-86b driver が組み込
+	まれない状態では動作しません。組み込まれている場合でも、[デバイスの使
+	用] のチェックボックスの印が出ている場合には使用できません。win95-86b
+	driver を組み込んで、以下のようにして [デバイスの使用] のチェックボッ
+	クスの印を消してください。[コントロールパネル] -> [システム] -> [デバ
+	イスマネージャ(タブコントロールで選んでください)] -> [pc-9801-86 また
+	は互換] -> [情報(タブコントロール)]で、[デバイスの使用]のチェックボッ
+	クスの印を消して、win95 が 86b を使用しないようにしてください。そして
+	この設定を変えたら必ず win95 を再起動してください。
+	　dos prompt ではなく、dos mode ならば win95-86b driver に関係なく ms
+	px86/mspm86 が動作します。
+
+
+【pc-9821canbe】
+	　pc-9821Cb,Cx,Cf,Cb2,Cx2,Nx,Na7 pcm 音源が wss 準拠となってすますので
+	pcmdriver は wss 用を使用して下さい。なお、software dipswitch で int1 
+	に設定した場合には opna 部分が認識されなくなるようです。
+
+
+【pc-9801-118】
+	　msdrv4 は非pnp mode のみサポートします。
+	　PC-9821V7,V10 では pnp mode でないと動かないので、msdrv4 はサポート
+	しません。
+	　PC-9821Xa 等の wss 音源を内蔵した機種で使用する場合、必ず wss の割り
+	込み番号、118-opn の割り込み番号、118-midi の割り込み番号が重ならない
+	ようにして下さい。割り込み番号を重ねてしまうと割り込みが掛からなくなる
+	ようです。某ゲームを発売したとき、118-opn の割り込みと wss の割り込み
+	を重ねているユーザーがたくさんいたため、サポート電話が鳴りっぱなしにな
+	りました。各ソフトメーカーが msdrv をゲームに組み込む際にはマニュアル
+	にこのことを記述した方がよいでしょう。
+	　PC-9821Cb,Cx,Cf,Cb2,Cx2,Nx,Na7 では 118-joystick/118-midi のみ使用可
+	能です。
+	　118-midi 機能を使用したい場合、マシンをリセットして 118 用の necmidi
+	.drv が install してある win3.1 を一度起動したのちすぐに win3.1 を終了
+	させます。そしてすぐに msdrv4 を常駐させます。一度でもリセットすると無
+	効になってしまいますので、注意して下さい。この方法で、ドーターボード m
+	idi へも外部 midi へも同じ data が出力されるようになります。
+	　win95 下で 118-midi 機能を使用したい場合、win95-118-midi driver が組
+	み込まれていて、[デバイスの使用]のチェックボックスの印が出ている場合に
+	使用できます。
+	　msdrv4-pcm driver である mspxwss/mspmwss は win95-wss driver ( 118-
+	pcm driver, matex-pcm driver 等 ) が組み込まれていて、[デバイスの使用]
+	のチェックボックスの印が出ている場合には使用できません。チェックボック
+	スの印が出ていないときや win95-wss driver が組み込まれていない場合に m
+	spxwss/mspmwss は動作します。よって、win95 下では wss-pcm と 118-midi 
+	の同時使用は出来ません。( 何か方法があるようでしたら御一報下さい。 )
+	　win95-118 driver が組み込まれている場合、以下のようにして [デバイス
+	の使用] のチェックボックスの印を消してください。[コントロールパネル] 
+	-> [システム] -> [デバイスマネージャ(タブコントロールで選んでください
+	)] -> [pc-9801-118] -> [情報(タブコントロール)]で、[デバイスの使用]の
+	チェックボックスの印を消して、win95 が 118 を使用しないようにしてくだ
+	さい。そしてこの設定を変えたら必ず win95 を再起動してください。
+	　118-pcm の設定に関しては wss-pcm と同じですので、その項目を読んで下
+	さい。
+
+
+【sb16】
+	　sb16 に付属している常駐ドライバーは必要ありません。msdrv4.exe 単体で
+	全ての動作をします。BLASTER 環境変数が設定されている場合にはそちらの設
+	定を使います。opl3 部分だけの使用では環境変数の設定も必要ありませんが
+	sb16 用の pcmdriver の使用の際には使用する int と dma を指定しなければ
+	なりません。msdrv4 の常駐時に option で指定 ( = SBIn , SBDn )、pcmdriv
+	er の常駐時に option で指定 ( = Dn , = In )、BLASTER 環境変数で設定、p
+	cmdriver の function で指定 ( function-05h,07h ) のうちどれかが必要で
+	す。
+	　win95+sb16 での msdrv4 は、win95-sb16 driver を組み込んだ状態でも組
+	み込まない状態でも動作します。
+	　msdrv4-pcm driver である mspxsb/mspmsb は win95 では動作しません。d
+	os prompt ではなく、dos mode にして動かしてください。
+	　win95-sb16 driver を組み込まない状態では mspxsb/mspmsb がハングしま
+	す。
+
+
+【rs-midi】
+	　computer 端子に接続した sc88 では 32ch の演奏が可能ですが、ma-1 等の
+	rs-midi では 32ch の演奏は出来ません。
+	　なお、win95 でも動作します。
+
+
+【 ファイルの拡張子について 】
+	.ms	曲データー
+	.msf	組込用の曲データー
+	.opn	opn/opl の音色データー
+	.ssg	ssg の音色データー
+	.se	効果音データー
+	.sef	組込用の効果音データー
+	.msp	pcm データー
+
+	.msp	曲のパートデーター
+	.se0	ssg 効果音のパートデーター
+
+
+【 MSDRV4 のサポートツール 】
+
+	r2m4_3b.lzh	.rcp/.r36 ファイルのコンバーター
+	rcp2ms.exe	.rcp/.r36 ファイルを .ms ファイルへコンバートするツール
+	rcpl.exe	直接 .rcp/.r36 ファイルを演奏するツール
+	ms2rcp.exe	.ms ファイルを .rco/.r36 ファイルへコンバートするツール
+
+	mst4_5b.lzh	技術資料
+	msdrv4l.exe	組み込み用の msdrv4.exe
+	ms2msf.exe	.ms データーをより小さい .msf へコンバートするツール
+
+	msm4_3b.lzh	.mml コンバーター
+	msmml.exe	.mml ファイルを .ms ファイルへコンバートするツール
+
+	eds4_5a.lzh	step エディターを含む統合環境
+	eds.exe		統合環境エディター
+	msssg.exe	.ssg エディター
+	msopn.exe	.opn エディター
+	msms.exe	step エディター
+
+	mss4_5a.lzh	効果音の統合環境 ( eds から呼び出します )
+	msse.exe	効果音の統合環境エディター ( eds から呼び出します )
+	mssessg.exe	ssg 効果音エディター
+	msseopn.exe	opn 効果音エディター
+	msseopl.exe	opl 効果音エディター
+
+	msp4_5a.lzh	pcmdriver のセット
+
+
+【連絡先】
+　　　　zob　　　　　　　　　　 zob11789
+　　　　東京ＢＢＳ　　　　　　　KAKERA  
+　　　　アトランティスネット　　ATL0935 
+	アリス－ネット		ALS07436
+　　　　ﾛｰｶﾙﾗｲﾝ夜な夜な　　　　 YEN548  
+　　　　ミルキームーンＮＥＴ　　MMN00562
+　　　　Midnight Cat　　　　　　KENJI   
+	アイオー☆倶楽部	IOC00449
+　　　　ＢＯＭＢネット　　　　　BOMB0004
+	NIFTY-Serve		GEG06337
+
+	　これらのＮＥＴの方々には、いっつもお世話になっています。m(__)m 多大
+	な power をＮＥＴ運営のために使われている sysop さん方には感謝のしよ
+	うがありません。これからもよろしくおねがいします。m(__)m
+
+
+【ＢＯＭＢ－ＮＥＴへようこそ！！】
+	　このＢＯＭＢ－ＮＥＴは、ＫＥＮＪＩの友人がやっているネットです。僕
+	自身も他のＮＥＴでは出来ない妖しい書き込みをする事もありますので、九
+	州方面の方もそうでない方もアクセスしてみて下さいねっ！！
+	ＢＯＭＢ－ＮＥＴ ktbbs　max9600bps　   月～土　2:00～4:00
+	                        092-523-3418   日　　　1:00～6:00
+	　単回線で暫定運営中！！　時間外にはアクセスしないで下さいねっ！！
+
+
+【著作権表示】
+	　このプログラムは freeware で使用には一切の料金は取りませんが著作権の
+	放棄は致しません。
+	　この機種では動かない等の情報がありましたらメールを下さいませ。転載を
+	した場合も（する人はいるのだろうか？）できたらメールをくれたらうれしい
+	なっ。
+
+
+【組み込みについて】
+	　msdrv4.exe & msdrv4l.exe & msp.com & msmixsb.com をソフト等へ組み込
+	む場合は連絡は必要ありません。使用に関してのロイヤリティーは販売目的の
+	場合も必要ありませんのでで安心して使って下さい。
+	　copy right の改変は認めません。常駐時に表示されるようにして下さい。
+	画面を一時的に表示されなくし copy right を表示されなくする事も認めませ
+	ん。やむをえずそうしなければならない場合は、ＫＥＮＪＩまでご連絡を下さ
+	い。
+	　組み込み使用をした場合、寄付はお待ちしています。もしソフトに組み込ん
+	で莫大な利益を得た場合、今後のソフト開発のため少額でも寄付をいただける
+	と幸いですが、無理をして寄付をする必要はありません。まずは身内を優先し
+	ましょう。なお、外注費という形で請求書、領収書の発行もいたします。
+	　.ms そのままのデーターでは大きいのでより小さい .msf フォーマットへ変
+	換する ms2msf.exe があります。ms2msf は .msf に圧縮をかけますが、その
+	際、大きな曲データーほど小さくなります。
+	　今までに僕がプログラムの仕事をした方でこのプログラムを組みたい場合は
+	必ずご連絡下さい。この場合に限り使用許諾無しでの使用を禁止します。
+
+
+【組み込み時の保証について】
+	　なお、企業で msdrv4 を組み込みをする場合、どうしても動作保証が必要な
+	場合があると思います。また、迅速なバグｆｉｘへの対応が必要な場合もあり
+	ます。出来るだけ無料で対応しますが、有料でサポート込みでの契約も出来ま
+	す。その場合、１タイトル当たり１０万円いただけたら幸いです。この契約を
+	結んだ場合、最優先にバグｆｉｘをすることをお約束します。ですが、基本的
+	に２週間に１度は msdrv4 の source code をいじっているので、この契約を
+	結ばなくとも２週間以上お待たせすることは無いと思います。
+
+
+【チェック機種】
+	pc-9821xa10/c12 + super-mpu + sb16 + pc-9801-86 + pc-9801-118
+
+
+【使用上の注意】
+	　このプログラムを使用したことによって生じた損害は、全く保証しません。
+	もし、ＨＤ等が壊れても、作者は保証しません。
+	作者は、このプログラムに不備があっても、それを訂正する義務を負いません
+	が、バージョンＵＰはしていきますので、何かあったら、ご連絡を！！
+
+
+【最大の感謝】
+	感想等をくださった、皆さん、どうも有り難う御座いました。
+
+						Ｂｙ　ＫＥＮＪＩ
+
+
