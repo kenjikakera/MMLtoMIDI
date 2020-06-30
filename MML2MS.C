@@ -1,5 +1,5 @@
 /**
-mml2ms.c
+mml2mid.c
 
 Copyright 2020 kenjishinmyou
 
@@ -52,11 +52,13 @@ typedef unsigned char BYTE;
 ========================================================================== */
 /*
 	文字コード
+
+		現在の改行コードはlinuxはlf/macはcr/winはcr+lf/os-2はcr+lf
 */
-#define CR		0	x0d
-#define LF			0x0a
-#define	EOF			0x1a
-#define TAB			09h
+#define CR		0x0d
+#define LF		0x0a
+#define	EOF		0x1a
+#define TAB		09h
 #define MES_MARJIN	23
 
 /*
@@ -74,14 +76,15 @@ typedef unsigned char BYTE;
 #define			PRE_DEFINE		"DEFINE\0"
 #define			PRE_ENDIF		"ENDIF\0"
 #define			PRE_IF			"IF\0"
-#define			PRE_ERR_HARMONY	"[a-gA-G]\([a-gA-G]\{0,1})\\0"				/* future 正規表現の和音 (error) */
+/* 多分、和音はプリプロセッサでパース可能なので、#cdeとかにする予定  3音以上ならば可能 */
+#define			PRE_ERR_HARMONY		"[a-gA-G]\([a-gA-G]\{0,1})\\0"				/* future 正規表現の和音 (error) */
 #define			PRE_HARMONY		"[a-gA-G]\([a-gA-G]\{2,})\\0"				/* future 正規表現の和音 */
 
 
 /*
 	mml command
 */
-#define mml_dot_tr				".tr"
+#define mml_dot_tr			".tr"
 #define	mml_set_note			"n"
 #define	mml_set_onpu_c			"c"
 #define mml_set_onpu_d			"d"
@@ -92,25 +95,25 @@ typedef unsigned char BYTE;
 #define	mml_set_onpu_b			"b"
 #define	mml_set_rest			"r"
 #define	mml_set_off0			"off"
-#define	mml_set_on0				"on"
+#define	mml_set_on0			"on"
 #define	mml_set_off1			"@off"
-#define	mml_set_on1				"@on"
-#define	mml_set_ts2				"@ts-"
-#define	mml_set_ts1				"@ts+"
-#define	mml_set_ts0				"_ts"
+#define	mml_set_on1			"@on"
+#define	mml_set_ts2			"@ts-"
+#define	mml_set_ts1			"@ts+"
+#define	mml_set_ts0			"_ts"
 #define	mml_set_opnch2mode		"@om"
 #define	mml_set_opnch2mask0		"@m"
 #define	mml_set_opnch2mask1		"m"
 #define	mml_set_progssg			"@ssg"
 #define	mml_set_progopn			"@opn"
 #define	mml_set_progopl			"@opl"
-#define	mml_set_sb4				"sb4"
-#define	mml_set_sb2				"sb2"
-#define	mml_set_sbc				"sbc"
-#define	mml_set_oct				"o"
+#define	mml_set_sb4			"sb4"
+#define	mml_set_sb2			"sb2"
+#define	mml_set_sbc			"sbc"
+#define	mml_set_oct			"o"
 #define	mml_set_oct_up			">"
 #define	mml_set_oct_down		"<"
-#define	mml_set_len				"l"
+#define	mml_set_len			"l"
 #define	mml_set_vol_bass2		"@dvb-"
 #define	mml_set_vol_bass1		"@dvb+"
 #define	mml_set_vol_bass0		"@dvb"
@@ -137,26 +140,26 @@ typedef unsigned char BYTE;
 #define	mml_set_vol0			"v"
 #define	mml_set_tempo			"t"
 #define	mml_set_midi_ch			"@c"
-#define	mml_set_q0				"q"
-#define	mml_set_q1				"@q"
-#define	mml_set_pt3				"@pt-"
-#define	mml_set_pt2				"@pt+"
-#define	mml_set_pt0				"_pt"
+#define	mml_set_q0			"q"
+#define	mml_set_q1			"@q"
+#define	mml_set_pt3			"@pt-"
+#define	mml_set_pt2			"@pt+"
+#define	mml_set_pt0			"_pt"
 #define	mml_set_pore			"pore"
 #define	mml_set_porn			"porn"
 #define	mml_set_porv			"porv"
-#define	mml_set_por				"@p"
+#define	mml_set_por			"@p"
 #define	mml_set_pan3			"pan-"
 #define	mml_set_pan2			"pan+"
 #define	mml_set_pan0			"p"
 #define	mml_set_bendr			"@bendr"
-#define	mml_set_mc				"@mc"
-#define	mml_set_dt				"@dt"
-#define	mml_set_lfo				"@lf"
+#define	mml_set_mc			"@mc"
+#define	mml_set_dt			"@dt"
+#define	mml_set_lfo			"@lf"
 #define	mml_set_lfo_pitch		"@lp"
 #define	mml_set_lfo_amp			"@la"
-#define	mml_set_music_timing	"@mt"
-#define	mml_set_vc				"@"
+#define	mml_set_music_timing		"@mt"
+#define	mml_set_vc			"@"
 #define	mml_set_harmony			"&"
 #define	mml_set_mloops			"["
 #define	mml_set_mloop			"]"
@@ -164,7 +167,7 @@ typedef unsigned char BYTE;
 #define	mml_set_ycom			"y"
 
 
-
+#if 0
 
 
 #define N		4096					/* 環状バッファの大きさ */
@@ -406,28 +409,12 @@ void error(char *message)  /* メッセージを表示し終了 */
 void usage( void )  /* メッセージを表示し終了 */
 {
 
-	fprintf(stderr, "MML2MS.EXE : .mml to .ms\n");
-	fprintf(stderr, "Copyright(c)KENJI 2020.7- Release 1.00 All rights reserved.\n");
+	fprintf(stderr, "MML2MID.EXE : .mml to .mid/.ms\n");
+	fprintf(stderr, "Copyright(c)KENJI 2020.6- Release 0.09 All rights reserved.\n");
 	fprintf(stderr, " Programed by KENJI.\n");
 	fprintf(stderr, "usage : PT1S [-options...] filename [maskfilename] [savename] [-options...]\n");
 	fprintf(stderr, "	filename	.bmp file name\n");
 	fprintf(stderr, "	savename	パス名が違うときに使用\n");
-	fprintf(stderr, "	/Cb,g,r		重ねの抜きカラー ( 標準は抜き無し ) \n");
-	fprintf(stderr, "	/Sx,y,xl,yl	セーブ時の範囲指定 ( 始点、サイズ、1 dot 単位 )\n");
-	fprintf(stderr, "	/Xx,y,xe,ye	セーブ時の範囲指定 ( 始点、終点、1 dot 単位 )\n");
-	fprintf(stderr, "	/Bx,y,xl,yl	セーブ時の範囲指定 ( 始点、サイズ、横8 / 縦1 dot 単位 )\n");
-	fprintf(stderr, "	/Px,y		表示時の座標指定\n");
-	fprintf(stderr, "	/Ax,y		基準座標指定 ( 圧縮座標からこの値を引いた値が表示位置 )\n");
-	fprintf(stderr, "			( マイナスの値も指定できます )\n");
-	fprintf(stderr, "	/D		.pt1 file の日付を bmp に合わせる\n");
-	fprintf(stderr, "	/U		savenameの全角/半角英小文字を全角/半角英大文字に変換\n");
-	fprintf(stderr, "	/V0		展開スピード重視の圧縮を行う\n");
-	fprintf(stderr, "	/V1,0	blue plane のみの圧縮\n");
-	fprintf(stderr, "	/V1,1	green plane のみの圧縮\n");
-	fprintf(stderr, "	/V1,2	red plane のみの圧縮\n");
-	fprintf(stderr, "	/V1,3	blue/green/red plane の一致をチェックして圧縮\n");
-	fprintf(stderr, "	/V2		圧縮サイズ重視の圧縮を行う\n");
-	fprintf(stderr, "	/V3		圧縮サイズ重視の圧縮を行い、マスクプレーンも圧縮する\n");
 	fprintf(stderr, "makeモードの説明は >pt1s.exe /f /?[ret]\n");
 	longjmp( main_sj,EXIT_FAILURE );
 	//exit(EXIT_FAILURE);
@@ -1517,3 +1504,5 @@ int main(int argc, char **argv)
 		return mainprog( argc,argv );
 	}
 }
+
+#endif
